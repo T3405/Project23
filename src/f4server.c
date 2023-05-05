@@ -1,11 +1,37 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+#include <fcntl.h>
+#include <limits.h>
+#include <signal.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
+
 
 #include "semaphore.h"
+#include "commands.h"
+#include "f4logic.h"
 
+static volatile int status = 1;
+
+void intHandler(int dummy) {
+    printf("Stopping... %d\n", dummy);
+    status = 0;
+}
+
+int init_fifo(char name[]){
+    remove(name);//TODO Think if multiple instance running
+    if (mkfifo(name, S_IRUSR | S_IWUSR) != 0) {
+        perror("Creation FIFO :");
+        exit(1);
+    }
+
+    return open(name, O_RDONLY | O_NONBLOCK);
+}
 
 
 int main(int argc, char *argv[]){
@@ -41,6 +67,13 @@ int main(int argc, char *argv[]){
     symbols[0] = *argv[3];
     symbols[1] = *argv[4];
 
+    //Creation FIFO for init connection
+    //No need to have sem has if the read or write is below PIPE_BUF then you can have multiple reader and writer
+    //https://www.gnu.org/software/libc/manual/html_node/Pipe-Atomicity.html
+    //https://stackoverflow.com/questions/17410334/pipe-and-thread-safety
+    //Min size for PIPE_BUF is 512 byte
+
+    signal(SIGINT, intHandler); // Read CTRL+C and stop the program
 
 
     //pipe id da file preciso per cominciare la connessione al server protetto da semaphore
