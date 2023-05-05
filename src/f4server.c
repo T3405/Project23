@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include <fcntl.h>
-#include <limits.h>
 #include <signal.h>
 
 #include <sys/types.h>
@@ -23,7 +22,7 @@ void intHandler(int dummy) {
     status = 0;
 }
 
-int init_fifo(char name[]){
+int init_fifo(char name[]) {
     remove(name);//TODO Think if multiple instance running
     if (mkfifo(name, S_IRUSR | S_IWUSR) != 0) {
         perror("Creation FIFO :");
@@ -121,38 +120,48 @@ int main(int argc, char *argv[]) {
 
     //Calculating the size of the shared memory
     struct shared_mem_info shm_mem_inf;
-    shm_mem_inf.key = ftok(".", getpid());
     shm_mem_inf.mem_size = row * column * sizeof(pid_t);
 
+    //Key for the shared memory and the semaphore
+    //Todo maybe random generation for key ?
+    shm_mem_inf.key = ftok(".", getpid());
 
+
+
+    //TODO Creation of sem for shared memory
+
+    //Create shared memory
     if (shmget(shm_mem_inf.key, shm_mem_inf.mem_size, IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
-
-    pid_t ** matrix = shmat(shm_mem_inf.key,NULL,0);
-
+    pid_t **matrix = shmat(shm_mem_inf.key, NULL, 0);
+    //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
-    cmd_broadcast(clients,CMD_UPDATE,NULL);
+
+    //Tell the client to update their internal shared memory
+    cmd_broadcast(clients, CMD_UPDATE, NULL);
 
 
 
 
+    //Set the turn to the first player
     int turn_num = 0;
     struct client_info player = cmd_turn(clients, turn_num);
 
 
     struct client_action action;
     int game = 1;
-    while(game){
-        if(msgrcv(key_msg_qq_input,&action,CMD_ACTION,CMD_ACTION/100,MSG_NOERROR)>0){
-            if(action.pid == player.pid){
-               pid_t result = f4_play(matrix,column,action.pid,row,column);
-               if(result == -1){
-                   cmd_send(player, CMD_INPUT_ERROR, NULL);
-               }else if(result == player.pid){
-                   cmd_broadcast(clients,CMD_WINNER,NULL);
-                   game = 0;
-               }
+    while (game) {
+        //Read incoming msg queue
+        if (msgrcv(key_msg_qq_input, &action, CMD_ACTION, CMD_ACTION / 100, MSG_NOERROR) > 0) {
+            if (action.pid == player.pid) {
+                pid_t result = f4_play(matrix, column, action.pid, row, column);
+                if (result == -1) {
+                    cmd_send(player, CMD_INPUT_ERROR, NULL);
+                } else if (result == player.pid) {
+                    cmd_broadcast(clients, CMD_WINNER, NULL);
+                    game = 0;
+                }
                 turn_num = !turn_num;
                 player = cmd_turn(clients, turn_num);
 
