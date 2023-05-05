@@ -1,4 +1,4 @@
-
+#include "f4logic.h"
 
 /*
  * Funzione modifica matrice e aggiunge il player
@@ -8,11 +8,6 @@
  *
  * TODO save matrix
  */
-int f4_play(int** matrix,int column,int player,int size[]){
-
+int f4_play(int** matrix,int column,pid_t player,int row_size,int column_size){
+    return 0;
 }
-
-
-
-
-
