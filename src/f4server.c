@@ -34,12 +34,12 @@ int init_fifo(char name[]){
 }
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
 
     // controlla il numero di argomenti di argc
     // esecuzione del server con numero minore di parametri (o 0) comporta la stampa di un messaggio di aiuto
-    if(argc != 5){
+    if (argc != 5) {
         printf("Usage: %s <row> <column> sym_1 sym_2\n", argv[0]);
         return 0;
     }
@@ -49,18 +49,18 @@ int main(int argc, char *argv[]){
     int column = atoi(argv[2]);
 
     //controllo validitá della matrice
-    if(row < 5){
+    if (row < 5) {
         printf("The input row must be >= 5\n");
         return 1;
     }
-    if(column < 5){
+    if (column < 5) {
         printf("The input column must be < 5\n");
         return 1;
     }
 
     //inizializziamo i simboli usati dai due giocatori che devono essere diversi tra di loro
     char symbols[2];
-    if(*argv[3] == *argv[4]){
+    if (*argv[3] == *argv[4]) {
         printf("Can't use same symbols\n");
         return 1;
     }
@@ -76,6 +76,90 @@ int main(int argc, char *argv[]){
     signal(SIGINT, intHandler); // Read CTRL+C and stop the program
 
 
+    //Create fifo for connecting
+    int fd_first_input = init_fifo(DEFAULT_PATH);
+
+    struct client_info clients[2];
+    int queue_size = 0;
+    while (1) {
+        //Read a client info from the FIFO
+        struct client_info buffer;
+        ssize_t n = read(fd_first_input, &buffer, sizeof(struct client_info));
+        if (n > 0) {
+            printf("Client connecting with :\n");
+            printf("pid :%d\n", buffer.pid);
+            printf("key id : %d\n", buffer.key_id);
+            printf("mode : %c\n", buffer.mode);
+
+            if (buffer.mode == '*') {
+                //Single logic here
+            } else {
+                clients[queue_size++] = buffer;
+                if (queue_size == 2) {
+                    queue_size = 0;
+                    //Create fork and pass logic
+                    if (fork() == 0) {
+                        //TODO store child and terminate them.
+                        break;
+                    }
+                }
+            }
+        }
+        if (status == 0) {
+            //Main program finish
+            return 1;
+        }
+    }
+    //Child stuff
+    key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid());
+
+    //Send the symbols to the clients
+    cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
+    cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
+    //Broadcast symbol
+    cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
+
+    //Calculating the size of the shared memory
+    struct shared_mem_info shm_mem_inf;
+    shm_mem_inf.key = ftok(".", getpid());
+    shm_mem_inf.mem_size = row * column * sizeof(pid_t);
+
+
+    if (shmget(shm_mem_inf.key, shm_mem_inf.mem_size, IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1) {
+        //TODO handle error if there is multiple shared_memory (should be impossible)
+    }
+
+    pid_t ** matrix = shmat(shm_mem_inf.key,NULL,0);
+
+    cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
+    cmd_broadcast(clients,CMD_UPDATE,NULL);
+
+
+
+
+    int turn_num = 0;
+    struct client_info player = cmd_turn(clients, turn_num);
+
+
+    struct client_action action;
+    int game = 1;
+    while(game){
+        if(msgrcv(key_msg_qq_input,&action,CMD_ACTION,CMD_ACTION/100,MSG_NOERROR)>0){
+            if(action.pid == player.pid){
+               pid_t result = f4_play(matrix,column,action.pid,row,column);
+               if(result == -1){
+                   cmd_send(player, CMD_INPUT_ERROR, NULL);
+               }else if(result == player.pid){
+                   cmd_broadcast(clients,CMD_WINNER,NULL);
+                   game = 0;
+               }
+                turn_num = !turn_num;
+                player = cmd_turn(clients, turn_num);
+
+            }
+        }
+    }
+
     //pipe id da file preciso per cominciare la connessione al server protetto da semaphore
 
 
@@ -87,6 +171,7 @@ int main(int argc, char *argv[]){
      * if single{
      *  single process fork
      * }else{
+     * fork(pipe1,pipe2)
      * wait_antoher_client
      * S <- C (pid,mode)
      * linkpipe1 S -> C1
@@ -96,12 +181,13 @@ int main(int argc, char *argv[]){
      *
      * pipe1("symbol[0]")
      * pipe2("symbol[1]")
-     * fork(pipe1,pipe2)
      * create pipe_rcv (forse message queue)
      * create sem
      * broadcast_pipe(pipe_rcv.id,sem.id)
      *
      * shared_memory(matrix)
+     * broadcast_pipe(set_sem_id,sem.id);
+     * broadcast_pipe(set_shared_memory.id,sem.id)
      * broadcast_pipe(shared_memory.id,sem.id)
      *
      * pipe1(your_turn)
@@ -137,7 +223,7 @@ int main(int argc, char *argv[]){
      * broadcast_pipe("winner","symbol")
      * break();
      * }
-     * turn()
+     * player()
      * } <---
      * destroy sem,shared,pipe
      */
