@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
 #include <fcntl.h>
 #include <signal.h>
 
@@ -9,26 +8,25 @@
 #include <sys/stat.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#include <sys/wait.h>
 
-
-#include "semaphore.h"
+#include "errExit.h"
 #include "commands.h"
 #include "f4logic.h"
 
-static volatile int status = 1;
+
+static volatile int active = 1;
 
 void intHandler(int dummy) {
-    printf("Stopping... %d\n", dummy);
-    status = 0;
+    active = 0;
 }
 
 int init_fifo(char name[]) {
-    remove(name);//TODO Think if multiple instance running
     if (mkfifo(name, S_IRUSR | S_IWUSR) != 0) {
-        perror("Creation FIFO :");
+        printf("There is already an instance of f4server running\n");
+        printf("If you want to force start please use -f as last argument");
         exit(1);
     }
-
     return open(name, O_RDONLY | O_NONBLOCK);
 }
 
@@ -38,9 +36,16 @@ int main(int argc, char *argv[]) {
 
     // controlla il numero di argomenti di argc
     // esecuzione del server con numero minore di parametri (o 0) comporta la stampa di un messaggio di aiuto
-    if (argc != 5) {
+    if (argc < 5) {
         printf("Usage: %s <row> <column> sym_1 sym_2\n", argv[0]);
         return 0;
+    }
+    //-f it remove the old pipe file before running the server
+    if(argc == 6){
+        if(strcmp(argv[5],"-f")){
+            printf("Unlinking old file\n");
+            unlink(DEFAULT_PATH);
+        }
     }
 
     // trasformiamo argv1 e 2 in interi
@@ -69,10 +74,12 @@ int main(int argc, char *argv[]) {
     //Creation FIFO for init connection
     //No need to have sem has if the read or write is below PIPE_BUF then you can have multiple reader and writer
     //https://www.gnu.org/software/libc/manual/html_node/Pipe-Atomicity.html
-    //https://stackoverflow.com/questions/17410334/pipe-and-thread-safety
     //Min size for PIPE_BUF is 512 byte
 
+
     signal(SIGINT, intHandler); // Read CTRL+C and stop the program
+    signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
+
 
 
     //Create fifo for connecting
@@ -104,18 +111,30 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        if (status == 0) {
-            //Main program finish
+        if (active == 0) {
+            printf("Stopping server\n");
+
+            //Wait for every child to terminate
+            pid_t child;
+            int status;
+            while ((child = waitpid(0,&status,0))){
+                printf("Child %d has been terminated\n",child);
+            }
+            //Close fifo
+            close(fd_first_input);
+            unlink(DEFAULT_PATH);
             return 1;
         }
     }
-    //Child stuff
-    key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid());
+
+    //Child
 
     //Send the symbols to the clients
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
     cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
-    //Broadcast symbol
+
+    //Broadcast input queue
+    key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid());
     cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
 
     //Calculating the size of the shared memory
@@ -128,16 +147,24 @@ int main(int argc, char *argv[]) {
 
 
 
-    //TODO Creation of sem for shared memory
+
+    //Creation of the semaphore
+    int shm_mem_sem_id = semget(shm_mem_inf.key,2,IPC_CREAT);
+    //TODO Lock sem
 
     //Create shared memory
-    if (shmget(shm_mem_inf.key, shm_mem_inf.mem_size, IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1) {
+    int shm_mem_id = shmget(shm_mem_inf.key, shm_mem_inf.mem_size, IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
+    if (shm_mem_id) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
     pid_t **matrix = shmat(shm_mem_inf.key, NULL, 0);
+    //Fill the array with 0
+    clean_array(matrix,row,column);
+
     //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
 
+    //TODO Unlock sem
     //Tell the client to update their internal shared memory
     cmd_broadcast(clients, CMD_UPDATE, NULL);
 
@@ -147,26 +174,62 @@ int main(int argc, char *argv[]) {
     //Set the turn to the first player
     int turn_num = 0;
     struct client_info player = cmd_turn(clients, turn_num);
-
-
-    struct client_action action;
-    int game = 1;
-    while (game) {
-        //Read incoming msg queue
-        if (msgrcv(key_msg_qq_input, &action, CMD_ACTION, CMD_ACTION / 100, MSG_NOERROR) > 0) {
+    struct msg_buffer buffer;
+    //Main game loop
+    while (active) {
+        //Read incoming msg queue non blocking
+        if (msgrcv(key_msg_qq_input, &buffer, CMD_CLI_ACTION, CMD_CLI_ACTION / 100, MSG_NOERROR | IPC_NOWAIT) > 0) {
+            //Read the action
+            struct client_action action = *(struct client_action*)buffer.msg;
+            //Check if a player has abandon the game
+            if(action.column == -1){
+                //TODO Abandon logic
+            }
+            //Check if sender is the player
             if (action.pid == player.pid) {
+                //Play the move
                 pid_t result = f4_play(matrix, column, action.pid, row, column);
                 if (result == -1) {
+                    //Wrong input
                     cmd_send(player, CMD_INPUT_ERROR, NULL);
                 } else if (result == player.pid) {
+                    //Winner
                     cmd_broadcast(clients, CMD_WINNER, NULL);
-                    game = 0;
+                    active = 0;
                 }
                 turn_num = !turn_num;
+
+
+                //TODO Unlock the semaphore
+
+                //Send update command
+                cmd_broadcast(clients,CMD_UPDATE,NULL);
+
+
                 player = cmd_turn(clients, turn_num);
 
             }
         }
+    }
+
+    //Clean
+
+    //Removing shared memory
+    if(shmdt(matrix) == -1){
+        //TODO Handling error ?
+    }
+    if(shmctl(shm_mem_id,IPC_RMID,NULL) == -1){
+        //TODO Handling error ?
+    }
+
+    //Removing semaphore
+    if(semctl(shm_mem_sem_id,IPC_RMID,0) == -1){
+        //TODO Handling error ?
+    }
+
+    //Close all pipes
+    for (int i = 0; i < 2; ++i){
+        msgctl(clients[i].key_id,IPC_RMID,NULL);
     }
 
     //pipe id da file preciso per cominciare la connessione al server protetto da semaphore

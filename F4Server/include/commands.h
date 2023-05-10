@@ -21,11 +21,12 @@
 #define CMD_SET_SH_MEM (CMD_MSG_SIZE(struct shared_mem_info) + 2)
 #define CMD_UPDATE (3)
 #define CMD_TURN (4)
-#define CMD_ACTION (CMD_MSG_SIZE(struct client_action) + 5)
+
 #define CMD_INPUT_ERROR (6)
 #define CMD_WINNER (CMD_MSG_SIZE(char)+7)
 
 
+#define CMD_CLI_ACTION (CMD_MSG_SIZE(struct client_action) + 5)
 
 
 struct client_info{
@@ -33,6 +34,7 @@ struct client_info{
     key_t key_id;
     char mode;
 };
+
 
 struct msg_buffer{
     long mtype;
@@ -44,6 +46,12 @@ struct shared_mem_info{
     key_t key;
 };
 
+/**
+ * Client action
+ * pid = Process id of the sending process
+ * column = if >= 0 then number of the play column
+ * else -1 if abandon
+ */
 struct client_action{
     pid_t pid;
     int column;
@@ -66,6 +74,13 @@ void cmd_broadcast(struct client_info clients[], long cmd, void* msg);
  */
 void cmd_send(struct client_info client, long cmd, void* msg);
 
+
+/**
+ * Send the turn command to the client
+ * @param clients Clients
+ * @param turn 0 or 1 Turn
+ * @return The selected client
+ */
 struct client_info cmd_turn(struct client_info clients[],int turn);
 
 /**
