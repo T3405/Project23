@@ -31,7 +31,7 @@
 
 struct client_info{
     pid_t pid;
-    key_t key_id;
+    key_t message_qq;
     char mode;
 };
 
