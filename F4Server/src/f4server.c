@@ -146,8 +146,7 @@ int main(int argc, char *argv[]) {
     shm_mem_inf.mem_size = row * column * sizeof(pid_t);
 
     //Key for the shared memory and the semaphore
-    //Todo maybe random generation for key ?
-    shm_mem_inf.key = ftok(".", getpid());
+    shm_mem_inf.key = ftok(".", getpid()); //key matrice
 
 
 
@@ -163,7 +162,7 @@ int main(int argc, char *argv[]) {
     }
     pid_t **matrix = shmat(shm_mem_inf.key, NULL, 0);
     //Fill the array with 0
-    clean_array(matrix,row,column);
+    clean_array(matrix,row,column); //resetta la matrice
 
     //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
@@ -171,6 +170,7 @@ int main(int argc, char *argv[]) {
     //TODO Unlock sem
 
     //Tell the client to update their internal shared memory
+    // legge da memoria condivisa CMD_UPDATE
     cmd_broadcast(clients, CMD_UPDATE, NULL);
 
 
@@ -178,8 +178,8 @@ int main(int argc, char *argv[]) {
 
     //Dopo aver conneso d
     //Set the turn to the first player
-    int turn_num = 0;
-    struct client_info player = cmd_turn(clients, turn_num);
+    int turn_num = 0; //turno primo client
+    struct client_info player = cmd_turn(clients, turn_num); //giocatore che sta facendo la mossa
     struct msg_buffer buffer;
     //Main game loop
     while (active) {
@@ -218,8 +218,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    //Clean
-
+    //Clean e chiusura partita
     //Removing shared memory
     if(shmdt(matrix) == -1){
         //TODO Handling error ?
