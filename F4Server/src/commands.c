@@ -3,11 +3,12 @@
 
 
 
+//client 0 cmd : CMD_SET_SYMBOL : char
 void cmd_send(struct client_info client, long cmd, void* msg){
     struct msg_buffer buffer;
     buffer.mtype = cmd;
-    memcpy(buffer.msg,msg,4);
-    msgsnd(client.key_id,&buffer,get_msg_size(cmd),0);
+    memcpy(buffer.msg,msg, get_msg_size(cmd));
+    msgsnd(client.message_qq, &buffer, get_msg_size(cmd), 0);
 }
 
 
