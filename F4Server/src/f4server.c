@@ -83,24 +83,25 @@ int main(int argc, char *argv[]) {
 
 
     //Create fifo for connecting
-    int fd_first_input = init_fifo(DEFAULT_PATH);
+    int fd_fifo_first_input = init_fifo(DEFAULT_PATH);
 
     struct client_info clients[2];
     int queue_size = 0;
     while (1) {
         //Read a client info from the FIFO
         struct client_info buffer;
-        ssize_t n = read(fd_first_input, &buffer, sizeof(struct client_info));
+        ssize_t n = read(fd_fifo_first_input, &buffer, sizeof(struct client_info));
         if (n > 0) {
             printf("Client connecting with :\n");
             printf("pid :%d\n", buffer.pid);
-            printf("key id : %d\n", buffer.key_id);
+            printf("key id : %d\n", buffer.message_qq);
             printf("mode : %c\n", buffer.mode);
 
             if (buffer.mode == '*') {
                 //Single logic here
             } else {
-                clients[queue_size++] = buffer;
+                clients[queue_size] = buffer;
+                queue_size++;
                 if (queue_size == 2) {
                     queue_size = 0;
                     //Create fork and pass logic
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]) {
                 printf("Child %d has been terminated\n",child);
             }
             //Close fifo
-            close(fd_first_input);
+            close(fd_fifo_first_input);
             unlink(DEFAULT_PATH);
             return 1;
         }
@@ -130,11 +131,14 @@ int main(int argc, char *argv[]) {
     //Child
 
     //Send the symbols to the clients
+    //Passiamo al primo client il primo simbolo
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
     cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
 
-    //Broadcast input queue
-    key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid());
+
+
+    //Broadcast input queue id unico
+    key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid()); //key dei client
     cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
 
     //Calculating the size of the shared memory
@@ -165,12 +169,14 @@ int main(int argc, char *argv[]) {
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
 
     //TODO Unlock sem
+
     //Tell the client to update their internal shared memory
     cmd_broadcast(clients, CMD_UPDATE, NULL);
 
 
 
 
+    //Dopo aver conneso d
     //Set the turn to the first player
     int turn_num = 0;
     struct client_info player = cmd_turn(clients, turn_num);
@@ -229,7 +235,7 @@ int main(int argc, char *argv[]) {
 
     //Close all pipes
     for (int i = 0; i < 2; ++i){
-        msgctl(clients[i].key_id,IPC_RMID,NULL);
+        msgctl(clients[i].message_qq, IPC_RMID, NULL);
     }
 
     //pipe id da file preciso per cominciare la connessione al server protetto da semaphore
@@ -251,8 +257,8 @@ int main(int argc, char *argv[]) {
      *
      *  S -> broadcast_all()
      *
-     * pipe1("symbol[0]")
-     * pipe2("symbol[1]")
+     * message_queue1("symbol[0]")
+     * message_queue2("symbol[1]")
      * create pipe_rcv (forse message queue)
      * create sem
      * broadcast_pipe(pipe_rcv.id,sem.id)
