@@ -3,6 +3,8 @@
 
 
 int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_size) {
+
+    //TODO Fix not working
     // Check horizontally
     for (int row = 0; row < row_size; row++) {
         for (int col = 0; col < column_size - 3; col++) {
@@ -17,6 +19,7 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
 
 
 
+    //Working
     // Check vertically
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 0; col < column_size; col++) {
@@ -29,6 +32,8 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
         }
     }
 
+
+    //TODO Test
     // Check diagonally (top-left to bottom-right)
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 0; col < column_size - 3; col++) {
@@ -41,6 +46,7 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
         }
     }
 
+    //TODO Test
     // Check diagonally (top-right to bottom-left)
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 3; col < column_size; col++) {
@@ -63,7 +69,6 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
  * if winner ritorna il pid del winner
  * else ritorna 0
  *
- * TODO save matrix
  */
 int f4_play(pid_t *matrix, int column, pid_t player, int row_size, int column_size) {
 
@@ -73,6 +78,8 @@ int f4_play(pid_t *matrix, int column, pid_t player, int row_size, int column_si
     }
 
     //Controlla che ci sia spazio sulla colonna
+
+    //TODO fix matrix orientation
     char is_max_col = 0;
     int i;
     for (i = 0; i < column_size; ++i) {
