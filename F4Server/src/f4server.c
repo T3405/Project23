@@ -143,7 +143,8 @@ int main(int argc, char *argv[]) {
 
     //Calculating the size of the shared memory
     struct shared_mem_info shm_mem_inf;
-    shm_mem_inf.mem_size = row * column * sizeof(pid_t);
+    shm_mem_inf.row = row;
+    shm_mem_inf.column = column;
 
     //Key for the shared memory and the semaphore
     shm_mem_inf.key = ftok(".", getpid()); //key matrice
@@ -156,11 +157,11 @@ int main(int argc, char *argv[]) {
     //TODO Lock sem
 
     //Create shared memory
-    int shm_mem_id = shmget(shm_mem_inf.key, shm_mem_inf.mem_size, IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
+    int shm_mem_id = shmget(shm_mem_inf.key,  row * column * sizeof(pid_t), IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
     if (shm_mem_id) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
-    pid_t **matrix = shmat(shm_mem_inf.key, NULL, 0);
+    pid_t* matrix = shmat(shm_mem_inf.key, NULL, 0);
     //Fill the array with 0
     clean_array(matrix,row,column); //resetta la matrice
 
