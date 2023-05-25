@@ -17,6 +17,13 @@
 
 static volatile int active = 1;
 
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short  *array;
+};
+
+
 void intHandler(int dummy) {
     active = 0;
 }
@@ -84,6 +91,7 @@ int main(int argc, char *argv[]) {
 
     //Create fifo for connecting
     int fd_fifo_first_input = init_fifo(DEFAULT_PATH);
+
 
     struct client_info clients[2];
     int queue_size = 0;
@@ -154,7 +162,14 @@ int main(int argc, char *argv[]) {
 
     //Creation of the semaphore
     int shm_mem_sem_id = semget(shm_mem_inf.key,2,IPC_CREAT);
-    //TODO Lock sem
+
+    union semun sem_val;
+    sem_val.val = 0;
+    //Set semaphore to 1
+    semctl(shm_mem_inf.key,0,SETALL,sem_val);
+
+
+
 
     //Create shared memory
     int shm_mem_id = shmget(shm_mem_inf.key,  row * column * sizeof(pid_t), IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
@@ -162,13 +177,17 @@ int main(int argc, char *argv[]) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
     pid_t* matrix = shmat(shm_mem_inf.key, NULL, 0);
+
     //Fill the array with 0
     clean_array(matrix,row,column); //resetta la matrice
 
     //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
 
-    //TODO Unlock sem
+    //Unlock semaphore
+    sem_val.val = 2;
+    semctl(shm_mem_inf.key,0,SETALL,sem_val);
+
 
     //Tell the client to update their internal shared memory
     // legge da memoria condivisa CMD_UPDATE
@@ -207,8 +226,10 @@ int main(int argc, char *argv[]) {
                 turn_num = !turn_num;
 
 
-                //TODO Unlock the semaphore
 
+                //TODO Unlock the semaphore
+                sem_val.val = 2;
+                semctl(shm_mem_inf.key,0,SETALL,sem_val);
                 //Send update command
                 cmd_broadcast(clients,CMD_UPDATE,NULL);
 
