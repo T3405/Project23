@@ -42,7 +42,8 @@ struct msg_buffer{
 };
 
 struct shared_mem_info{
-    size_t mem_size;
+    size_t column;
+    size_t row;
     key_t key;
 };
 
