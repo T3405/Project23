@@ -3,6 +3,8 @@
 
 
 int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_size) {
+
+    //TODO Fix not working
     // Check horizontally
     for (int row = 0; row < row_size; row++) {
         for (int col = 0; col < column_size - 3; col++) {
@@ -17,6 +19,7 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
 
 
 
+    //Working
     // Check vertically
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 0; col < column_size; col++) {
@@ -29,6 +32,8 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
         }
     }
 
+
+    //TODO Test
     // Check diagonally (top-left to bottom-right)
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 0; col < column_size - 3; col++) {
@@ -41,6 +46,7 @@ int check_winner(const pid_t *matrix, pid_t player, int row_size, int column_siz
         }
     }
 
+    //TODO Test
     // Check diagonally (top-right to bottom-left)
     for (int row = 0; row < row_size - 3; row++) {
         for (int col = 3; col < column_size; col++) {
