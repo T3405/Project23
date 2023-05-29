@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     // controlla il numero di argomenti di argc
     // esecuzione del server con numero minore di parametri (o 0) comporta la stampa di un messaggio di aiuto
     if (argc < 5) {
-        printf("Usage: %s <row> <column> sym_1 sym_2\n", argv[0]);
+        printf("Usage: %s <n_row> <n_column> sym_1 sym_2\n", argv[0]);
         return 0;
     }
     //-f it remove the old pipe file before running the server
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
             //Check if sender is the player
             if (action.pid == player.pid) {
                 //Play the move
-                pid_t result = f4_play(matrix, column, action.pid, row, column);
+                pid_t result = f4_play(matrix, column, action.pid, column, row);
                 if (result == -1) {
                     //Wrong input
                     cmd_send(player, CMD_INPUT_ERROR, NULL);
@@ -291,7 +291,7 @@ int main(int argc, char *argv[]) {
      *
      * pipe1(your_turn)
      *
-     * // S <- C(pid,column)
+     * // S <- C(pid,n_column)
      *
      * // S <- C(pid,commando)
      *
