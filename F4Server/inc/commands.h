@@ -50,7 +50,7 @@ struct shared_mem_info{
 /**
  * Client action
  * pid = Process id of the sending process
- * column = if >= 0 then number of the play column
+ * n_column = if >= 0 then number of the play n_column
  * else -1 if abandon
  */
 struct client_action{
