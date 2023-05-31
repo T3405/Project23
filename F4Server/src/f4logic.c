@@ -42,24 +42,10 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
 
         }
     }
-/*
-    // Check for horizontal wins
-    for (i = 0; i < n_column; i++) {
-        for (j = 0; j < n_row - 3; j++) {
-            cell = GET_M(matrix, n_row, i, j);
-            if (cell != 0 && cell == GET_M(matrix, n_row, i, j+1) &&
-            cell == GET_M(matrix, n_row, i, j+2) &&
-            cell == GET_M(matrix, n_row, i, j+3)) {
-                return cell;
-            }
-        }
-    }
 
-
-
-    // Check for diagonal wins (top-left to bottom-right)
-    for (i = 0; i < n_column - 3; i++) {
-        for (j = 0; j < n_row - 3; j++) {
+    //Vertical
+    for (int i = 0; i < n_row - 3; i++) {
+        for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
             if (cell != 0 && cell == GET_M(matrix, n_row, i+1, j+1) &&
                 cell == GET_M(matrix, n_row, i+2, j+2) &&
@@ -68,10 +54,8 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
             }
         }
     }
-
-    // Check for diagonal wins (bottom-left to top-right)
-    for (i = 3; i < n_column; i++) {
-        for (j = 0; j < n_row - 3; j++) {
+    for (int i = 3; i < n_row; i++) {
+        for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
             if (cell != 0 && cell == GET_M(matrix, n_row, i-1, j+1) &&
                 cell == GET_M(matrix, n_row, i-2, j+2) &&
@@ -80,9 +64,6 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
             }
         }
     }
-
-    // No winner found
-    */
     return 0;
 }
 
