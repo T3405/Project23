@@ -1,12 +1,14 @@
 #include "commands.h"
 #include <errno.h>
 #include <signal.h>
+#include <stdio.h>
 
 
 //client 0 cmd : CMD_SET_SYMBOL : char
 void cmd_send(struct client_info client, long cmd, void* msg){
     struct msg_buffer buffer;
     buffer.mtype = cmd;
+    printf("size of %ld",cmd);
     memcpy(buffer.msg,msg, get_msg_size(cmd));
     msgsnd(client.message_qq, &buffer, get_msg_size(cmd), 0);
 }
@@ -33,8 +35,8 @@ ssize_t get_msg_size(long code){
 int is_alive(pid_t pid){
     if(kill(pid,0) == -1){
         if(errno == ESRCH){
-            return 1;
+            return 0;
         }
     }
-    return 0;
+    return 1;
 }

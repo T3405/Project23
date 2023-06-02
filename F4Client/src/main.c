@@ -5,6 +5,7 @@
 #include <curses.h>
 
 
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/signal.h>
@@ -39,26 +40,40 @@ int main(int argc,char* argv[]) {
 
 
     int fd = open(DEFAULT_PATH,O_WRONLY);
-
-
+    if (access(DEFAULT_PATH, W_OK) != 0) {
+        printf("Please start the server first!\n");
+    }
     struct client_info clientInfo;
     //Set pid
     clientInfo.pid = getpid();
     //Set check if mode is single player
     if(argc > 1){
-        if(argv[1] == "*"){
-            clientInfo.mode = '*';  //modalita' single player
+        if(argv[1][0] == '*'){
+            clientInfo.mode = argv[1][0];
+             //modalita' single player
         }
     }
     clientInfo.message_qq = ftok(".",getpid());
-
     //Write to FIFO and connect to client
     write(fd,&clientInfo, sizeof(struct client_info));
 
 
 
+    //Wait for simbol
+    char symbol;
+    printf("symbol %d\n",symbol);
+    int x;
+    while(1){
+        x = msgrcv(clientInfo.message_qq,&symbol,CMD_SET_SYMBOL/100,CMD_SET_SYMBOL,0);
+        if(x != 0){
+            break;
+        }
+    }
 
+    printf("symbol %d\n",symbol);
+    while(status);
 
+/*
     initscr();
     int x =0, y=0;
     while (status){
@@ -91,5 +106,5 @@ int main(int argc,char* argv[]) {
     endwin();
     printf("exit!\n");
 
-    return 0;
+    return 0;*/
 }

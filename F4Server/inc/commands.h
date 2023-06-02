@@ -13,6 +13,13 @@
  * 123 = mtype
  */
 
+
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short  *array;
+};
+
 #define CMD_MSG_SIZE(X) (sizeof(X)*100)
 
 //TODO think cmd code better
