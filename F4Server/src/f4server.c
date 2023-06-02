@@ -17,11 +17,6 @@
 
 static volatile int active = 1;
 
-union semun {
-    int val;
-    struct semid_ds *buf;
-    unsigned short  *array;
-};
 
 
 void intHandler(int dummy) {
@@ -31,7 +26,7 @@ void intHandler(int dummy) {
 int init_fifo(char name[]) {
     if (mkfifo(name, S_IRUSR | S_IWUSR) != 0) {
         printf("There is already an instance of f4server running\n");
-        printf("If you want to force start please use -f as last argument");
+        printf("If you want to force start please use -f as last argument\n");
         exit(1);
     }
     return open(name, O_RDONLY | O_NONBLOCK);
@@ -49,7 +44,7 @@ int main(int argc, char *argv[]) {
     }
     //-f it remove the old pipe file before running the server
     if(argc == 6){
-        if(strcmp(argv[5],"-f")){
+        if(argv[5] == "-f"){
             printf("Unlinking old file\n");
             unlink(DEFAULT_PATH);
         }
@@ -94,6 +89,7 @@ int main(int argc, char *argv[]) {
     int fd_fifo_first_input = init_fifo(DEFAULT_PATH);
 
 
+    int n_game = 0;
     struct client_info clients[2];
     int queue_size = 0;
     while (1) {
@@ -109,6 +105,7 @@ int main(int argc, char *argv[]) {
             if (buffer.mode == '*') {
                 //Single logic here
             } else {
+
                 clients[queue_size] = buffer;
                 queue_size++;
                 if (queue_size == 2) {
@@ -116,45 +113,55 @@ int main(int argc, char *argv[]) {
                     //Create fork and pass logic
                     
                     if(!is_alive(clients[0].pid)){
+                        printf("The process %d is not alive\n",clients[0].pid);
                         clients[0] = clients[1];
                         queue_size = 1;
                         continue;
                     }
+
                     if(!is_alive(clients[1].pid)){
+                        printf("The process %d is not alive\n",clients[1].pid);
                         queue_size = 1;
                         continue;
                     }
                         
-                    
+
+
                     if (fork() == 0) {
                         //TODO store child and terminate them.
                         break;
                     }
+                    n_game++;
                 }
             }
         }
         if (active == 0) {
             printf("Stopping server\n");
 
+            close(fd_fifo_first_input);
+            unlink(DEFAULT_PATH);
             //Wait for every child to terminate
             pid_t child;
             int status;
-            while ((child = waitpid(0,&status,0))){
+            while ((child = waitpid(0,&status,0)) != -1){
                 printf("Child %d has been terminated\n",child);
             }
             //Close fifo
-            close(fd_fifo_first_input);
-            unlink(DEFAULT_PATH);
+
+
             return 1;
         }
     }
 
     //Child
+    printf("Starting game number %d\n",n_game);
 
     //Send the symbols to the clients
     //Passiamo al primo client il primo simbolo
+
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
     cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
+    //msgsnd(client.message_qq, &buffer, get_msg_size(cmd), 0);
 
 
 
