@@ -1,14 +1,13 @@
 #include "f4logic.h"
-//const int n_column = 5, n_row = 6;
-int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
+
+
+int check_winner(const pid_t *matrix, int n_column, int n_row) {
     pid_t cell;
 
-    //Vertical good
-
+    //Vertical
     for (int j = 0; j < n_column; ++j){
         for (int i = 0; i < n_row - 3; ++i){
             cell = GET_M(matrix, n_row, i, j);
-          //  printf("c %d , r %d \ncell : %d\n",j,i,cell);
             if(cell == 0){
                 continue;
             }
@@ -21,11 +20,8 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
 
         }
     }
-    // 1 3
 
     //Horizontal
-
-
     for (int i = 0; i < n_row; ++i){
         for (int j = 0; j < n_column - 3; ++j){
             cell = GET_M(matrix, n_row, i, j);
@@ -43,7 +39,7 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
         }
     }
 
-    //Vertical
+    //Diagonale destra
     for (int i = 0; i < n_row - 3; i++) {
         for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
@@ -54,6 +50,8 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
             }
         }
     }
+
+    //Diagonale sinistra
     for (int i = 3; i < n_row; i++) {
         for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
@@ -72,7 +70,7 @@ int check_winner(const pid_t *matrix, pid_t player, int n_column, int n_row) {
  * Funzione modifica matrice e aggiunge il player
  * Controlla se e una giocata valida ritorna -1
  * if winner ritorna il pid del winner
- * else ritorna 0
+ * else ritorna ZERO
  *
  */
 
@@ -101,7 +99,7 @@ int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
     if (!is_max_col) {
         return -1;
     }
-    return check_winner(matrix, player, n_column, n_row);
+    return check_winner(matrix, n_column, n_row);
 }
 
 

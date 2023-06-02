@@ -3,6 +3,9 @@ project(F4Client C)
 
 set(CMAKE_C_STANDARD 11)
 
-include_directories(../F4Server/inc/ inc/)
+find_package(Curses REQUIRED)
+
+include_directories(../F4Server/inc/ inc/ ${CURSES_INCLUDE_DIR})
 
 add_executable(F4Client src/main.c inc/ui.h src/ui.c)
+target_link_libraries(F4Client ${CURSES_LIBRARIES})

@@ -88,3 +88,9 @@ struct client_info cmd_turn(struct client_info clients[],int turn);
  * GET THE SIZE OF THE STRUCT msg_buffer - long
  */
 ssize_t get_msg_size(long code);
+
+/*
+ * Check if an external process is alive
+ * @param pid process
+ */
+int is_alive(pid_t pid);

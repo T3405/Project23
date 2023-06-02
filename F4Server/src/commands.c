@@ -1,6 +1,6 @@
 #include "commands.h"
-
-
+#include <errno.h>
+#include <signal.h>
 
 
 //client 0 cmd : CMD_SET_SYMBOL : char
@@ -28,4 +28,13 @@ ssize_t get_msg_size(long code){
         return sizeof(long);
     }
     return code/100 - sizeof(long);
+}
+
+int is_alive(pid_t pid){
+    if(kill(pid,0) == -1){
+        if(errno == ESRCH){
+            return 1;
+        }
+    }
+    return 0;
 }

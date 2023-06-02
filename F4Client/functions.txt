@@ -1,0 +1,39 @@
+-> Send cmd (arguments)
+= Execute
+
+Connection phase:
+Client -> connect to server via FIFO (pid own_pid,key_t input_cmd,char type)
+
+Server{
+if type == "*"{
+        activate bot // We treat the bot as a client
+    }else{
+        wait for another client
+    }
+}
+Client1 = c1
+Client2 = c2
+
+//cmd symbols CMD_SET_SYMBOL
+Server -> c1(char symbol[0])
+Server -> c2(char symbol[1])
+
+
+//cmd CMD_SET_MSG_QQ_ID
+Server -> Clients(key_t input_cmd_server)
+
+
+//cmd CMD_SET_SH_MEM
+Server -> Clients(size_t column,size_t row,key_t key)
+
+---------------
+
+//cmd CMD_UPDATE
+Server -> Clients(update)
+
+
+//cmd CMD_TURN
+Server -> c1(turn)
+Server{aspetta client input}
+
+Client -> Server(pid own_pid,int column)

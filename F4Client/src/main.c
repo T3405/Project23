@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <curses.h>
+
 
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -29,81 +31,65 @@ void alertHandler(int sig){
 
 
 
-int main() {
 
-    //
+
+int main(int argc,char* argv[]) {
+
     signal(SIGINT, alertHandler); // Primo ctrl +c
-    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+
+    int fd = open(DEFAULT_PATH,O_WRONLY);
+
+
+    struct client_info clientInfo;
+    //Set pid
+    clientInfo.pid = getpid();
+    //Set check if mode is single player
+    if(argc > 1){
+        if(argv[1] == "*"){
+            clientInfo.mode = '*';  //modalita' single player
+        }
+    }
+    clientInfo.message_qq = ftok(".",getpid());
+
+    //Write to FIFO and connect to client
+    write(fd,&clientInfo, sizeof(struct client_info));
 
 
 
 
 
-
-    // Clear screen
-    clear_screen();
-
-
-    //printf("Creating board\n");
-
-
-
+    initscr();
+    int x =0, y=0;
     while (status){
-        clear_screen();
         int row = 5;
         int column = 5;
         for (int i = 0; i < row; ++i){
             for (int j = 0; j < column; ++j){
-                printf("| ");
+                printw("| ");
             }
-            printf("|\n");
+            printw("|\n");
         }
         //Todo read matrix
 
-        long n = 0;
-        char buffer[BUFSIZ];
 
-        while (n == 0 || n == -1){
-            n = read(STDIN_FILENO,buffer,BUFSIZ);
-            if(!status){
-                break;
-            }
-            if(n > 0){
-                char command[n];
-                memcpy(command,buffer,n);
-
-                int x = atoi(command);
-                if(x <= 0 || x > column){
-                    printf("Please input a valid number!\n");
-                    sleep(1);
-                }
-                //TODO Send column to server
-            }
-            //Handle command
+        int x = getch();
+        if(x == 'z'){
+            break;
         }
-        printf("n : %ld\n",n);
+        if(x == 'w'){
+            move(y++,x);
+        }else if(x == 's'){
+            move(y--,x);
+        }
 
-        //exit(1);
+        refresh();
 
+        erase();
 
     }
+    endwin();
     printf("exit!\n");
 
-    //
-    //    unsigned short row = w.ws_row-1;
-    //    for (int i = 0; i < row; ++i){
-    //            for (int j = 0; j < i; ++j) {
-    //                if(i == 0 || i == w.ws_col-1){
-    //                    printf("-");
-    //                }else{
-    //                    if(j == 0 || j == w.ws_col-1){
-    //                        printf("|");
-    //                    }else{
-    //                        printf(" ");
-    //                    }
-    //                }
-    //            }
-    //    }
-    //    return 0;  // make sure your main returns int
+    return 0;
 }

@@ -88,6 +88,7 @@ int main(int argc, char *argv[]) {
     signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
 
 
+    
 
     //Create fifo for connecting
     int fd_fifo_first_input = init_fifo(DEFAULT_PATH);
@@ -113,6 +114,18 @@ int main(int argc, char *argv[]) {
                 if (queue_size == 2) {
                     queue_size = 0;
                     //Create fork and pass logic
+                    
+                    if(!is_alive(clients[0].pid)){
+                        clients[0] = clients[1];
+                        queue_size = 1;
+                        continue;
+                    }
+                    if(!is_alive(clients[1].pid)){
+                        queue_size = 1;
+                        continue;
+                    }
+                        
+                    
                     if (fork() == 0) {
                         //TODO store child and terminate them.
                         break;
