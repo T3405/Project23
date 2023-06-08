@@ -1,13 +1,10 @@
 #include <fcntl.h>
+
 #include <stdio.h>
 #include <string.h>
-
-#include <curses.h>
-
-
 #include <errno.h>
 #include <stdlib.h>
-#include <sys/ioctl.h>
+
 #include <sys/signal.h>
 #include <unistd.h>
 #include "ui.h"
@@ -38,39 +35,49 @@ int main(int argc,char* argv[]) {
 
     signal(SIGINT, alertHandler); // Primo ctrl +c
 
-
     int fd = open(DEFAULT_PATH,O_WRONLY);
     if (access(DEFAULT_PATH, W_OK) != 0) {
         printf("Please start the server first!\n");
+        exit(0);
     }
     struct client_info clientInfo;
     //Set pid
     clientInfo.pid = getpid();
     //Set check if mode is single player
+    clientInfo.mode = '\0';
     if(argc > 1){
         if(argv[1][0] == '*'){
             clientInfo.mode = argv[1][0];
              //modalita' single player
         }
     }
-    clientInfo.message_qq = ftok(".",getpid());
     //Write to FIFO and connect to client
     write(fd,&clientInfo, sizeof(struct client_info));
 
-
-
-    //Wait for simbol
-    char symbol;
-    printf("symbol %d\n",symbol);
-    int x;
-    while(1){
-        x = msgrcv(clientInfo.message_qq,&symbol,CMD_SET_SYMBOL/100,CMD_SET_SYMBOL,0);
-        if(x != 0){
-            break;
-        }
+    char path[1024];
+    sprintf(path,"%s%d",DEFAULT_DIR,clientInfo.pid);
+    while (access(path, F_OK) != 0) {
+        //Wait till the file exists
     }
 
-    printf("symbol %d\n",symbol);
+    errno = 0;
+    printf("path : %s\n",path);
+
+
+
+    int input_fd = open(path,O_RDONLY);
+    //Wait for symbol
+    char symbol;
+    int code;
+    read(input_fd,&code, sizeof(int));
+    read(input_fd,&symbol, sizeof(char));
+    printf("code %d,char %c\n",code,symbol);
+    key_t memInfo;
+
+    read(input_fd,&code,sizeof (int));
+    read(input_fd,&memInfo,sizeof (memInfo));
+    printf("code %d ,key %d\n",code,memInfo);
+
     while(status);
 
 /*
