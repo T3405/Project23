@@ -54,6 +54,12 @@ int cmd_mkfifo(int pid, char* path,int mode){
     char buffer[path_size(pid,path)];
     sprintf(buffer,"%s%d",path,pid);
     mkfifo(buffer, S_IRUSR | S_IWUSR);
-    printf("path : %s,\n",buffer);
     return open(buffer,mode);
+}
+int cmd_rmfifo(int pid,char* path,int fd){
+    char buffer[path_size(pid,path)];
+    sprintf(buffer,"%s%d",path,pid);
+    close(fd);
+    unlink(buffer);
+    printf("removing path : %s\n",buffer);
 }

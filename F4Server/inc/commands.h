@@ -25,7 +25,7 @@ union semun {
 
 //TODO think cmd code better
 #define CMD_SET_SYMBOL (CMD_MSG_SIZE(char) + 0)
-#define CMD_SET_MSG_QQ_ID (CMD_MSG_SIZE(key_t) + CMD_MSG_SIZE(int)*2 + 1)
+#define CMD_SET_MSG_QQ_ID (CMD_MSG_SIZE(key_t) + 1)
 #define CMD_SET_SH_MEM (CMD_MSG_SIZE(struct shared_mem_info) + 2)
 #define CMD_UPDATE (3)
 #define CMD_TURN (4)
@@ -101,5 +101,7 @@ int is_alive(pid_t pid);
 
 
 int cmd_mkfifo(int pid, char* path,int mode);
+
+int cmd_rmfifo(int pid,char* path,int fd);
 
 int path_size(int id,char* path);
