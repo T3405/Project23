@@ -67,15 +67,17 @@ int main(int argc,char* argv[]) {
 
     int input_fd = open(path,O_RDONLY);
     //Wait for symbol
-    perror("error ");
     char symbol;
     int code;
     read(input_fd,&code, sizeof(int));
     read(input_fd,&symbol, sizeof(char));
+    printf("code %d,char %c\n",code,symbol);
+    key_t memInfo;
 
-    printf("code %d\nchar %c\n",code,symbol);
+    read(input_fd,&code,sizeof (int));
+    read(input_fd,&memInfo,sizeof (memInfo));
+    printf("code %d ,key %d\n",code,memInfo);
 
-    perror("error ");
     while(status);
 
 /*
