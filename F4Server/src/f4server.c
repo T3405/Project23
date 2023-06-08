@@ -9,14 +9,15 @@
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 #include "errExit.h"
 #include "commands.h"
 #include "f4logic.h"
+#include "ioutils.h"
 
 
 static volatile int active = 1;
-
 
 
 void intHandler(int dummy) {
@@ -29,7 +30,8 @@ int init_fifo(char name[]) {
         printf("If you want to force start please use -f as last argument\n");
         exit(1);
     }
-    return open(name, O_RDONLY | O_NONBLOCK);
+    //TODO Trying without O_NONBLOCK
+    return open(name, O_RDONLY);
 }
 
 
@@ -43,8 +45,8 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     //-f it remove the old pipe file before running the server
-    if(argc == 6){
-        if(argv[5] == "-f"){
+    if (argc == 6) {
+        if (argv[5] == "-f") {
             printf("Unlinking old file\n");
             unlink(DEFAULT_PATH);
         }
@@ -83,12 +85,18 @@ int main(int argc, char *argv[]) {
     signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
 
 
-    
+    //Creation default dir
+    if(mkdir(DEFAULT_DIR,0777) == -1){
+        errExit("error creating : ");
+    }
+
+
 
     //Create fifo for connecting
     int fd_fifo_first_input = init_fifo(DEFAULT_PATH);
 
 
+    //pid_t games[1024];
     int n_game = 0;
     struct client_info clients[2];
     int queue_size = 0;
@@ -99,7 +107,7 @@ int main(int argc, char *argv[]) {
         if (n > 0) {
             printf("Client connecting with :\n");
             printf("pid :%d\n", buffer.pid);
-            printf("key id : %d\n", buffer.message_qq);
+            printf("key id : %d\n", buffer.fifo_fd);
             printf("mode : %c\n", buffer.mode);
 
             if (buffer.mode == '*') {
@@ -111,20 +119,19 @@ int main(int argc, char *argv[]) {
                 if (queue_size == 2) {
                     queue_size = 0;
                     //Create fork and pass logic
-                    
-                    if(!is_alive(clients[0].pid)){
-                        printf("The process %d is not alive\n",clients[0].pid);
+
+                    if (!is_alive(clients[0].pid)) {
+                        printf("The process %d is not alive\n", clients[0].pid);
                         clients[0] = clients[1];
                         queue_size = 1;
                         continue;
                     }
 
-                    if(!is_alive(clients[1].pid)){
-                        printf("The process %d is not alive\n",clients[1].pid);
+                    if (!is_alive(clients[1].pid)) {
+                        printf("The process %d is not alive\n", clients[1].pid);
                         queue_size = 1;
                         continue;
                     }
-                        
 
 
                     if (fork() == 0) {
@@ -135,16 +142,19 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
+
+        //Sopra tutto giusto
         if (active == 0) {
             printf("Stopping server\n");
-
             close(fd_fifo_first_input);
             unlink(DEFAULT_PATH);
+            remove_dir(DEFAULT_DIR);
             //Wait for every child to terminate
             pid_t child;
             int status;
-            while ((child = waitpid(0,&status,0)) != -1){
-                printf("Child %d has been terminated\n",child);
+            //TODO Fix child termination
+            while ((child = waitpid(0, &status, 0)) != -1) {
+                printf("Child %d has been terminated\n", child);
             }
             //Close fifo
 
@@ -154,16 +164,25 @@ int main(int argc, char *argv[]) {
     }
 
     //Child
-    printf("Starting game number %d\n",n_game);
+    printf("Starting game number %d\n", n_game);
 
     //Send the symbols to the clients
     //Passiamo al primo client il primo simbolo
 
+
+
+    for (int i = 0; i < 2; ++i){
+        clients[i].fifo_fd = cmd_mkfifo(clients[i].pid,DEFAULT_DIR,O_WRONLY);
+
+    }
+    perror("error ");
+
+
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
+    perror("error ");
+    errno = 0;
     cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
-    //msgsnd(client.message_qq, &buffer, get_msg_size(cmd), 0);
-
-
+    perror("error ");
 
     //Broadcast input queue id unico
     key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid()); //key dei client
@@ -181,32 +200,33 @@ int main(int argc, char *argv[]) {
 
 
     //Creation of the semaphore
-    int shm_mem_sem_id = semget(shm_mem_inf.key,2,IPC_CREAT);
+    int shm_mem_sem_id = semget(shm_mem_inf.key, 2, IPC_CREAT);
 
     union semun sem_val;
     sem_val.val = 0;
     //Set semaphore to 1
-    semctl(shm_mem_inf.key,0,SETALL,sem_val);
+    semctl(shm_mem_inf.key, 0, SETALL, sem_val);
 
 
 
 
     //Create shared memory
-    int shm_mem_id = shmget(shm_mem_inf.key,  row * column * sizeof(pid_t), IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
+    int shm_mem_id =
+            shmget(shm_mem_inf.key, row * column * sizeof(pid_t), IPC_CREAT | IPC_CREAT | S_IRUSR | S_IWUSR) == -1;
     if (shm_mem_id) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
-    pid_t* matrix = shmat(shm_mem_inf.key, NULL, 0);
+    pid_t *matrix = shmat(shm_mem_inf.key, NULL, 0);
 
     //Fill the array with 0
-    clean_array(matrix,row,column); //resetta la matrice
+    clean_array(matrix, row, column); //resetta la matrice
 
     //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
 
     //Unlock semaphore
     sem_val.val = 2;
-    semctl(shm_mem_inf.key,0,SETALL,sem_val);
+    semctl(shm_mem_inf.key, 0, SETALL, sem_val);
 
 
     //Tell the client to update their internal shared memory
@@ -226,9 +246,9 @@ int main(int argc, char *argv[]) {
         //Read incoming msg queue non blocking
         if (msgrcv(key_msg_qq_input, &buffer, CMD_CLI_ACTION, CMD_CLI_ACTION / 100, MSG_NOERROR | IPC_NOWAIT) > 0) {
             //Read the action
-            struct client_action action = *(struct client_action*)buffer.msg;
+            struct client_action action = *(struct client_action *) buffer.msg;
             //Check if a player has abandon the game
-            if(action.column == -1){
+            if (action.column == -1) {
                 //TODO Abandon logic
             }
             //Check if sender is the player
@@ -249,9 +269,9 @@ int main(int argc, char *argv[]) {
 
                 //TODO Unlock the semaphore
                 sem_val.val = 2;
-                semctl(shm_mem_inf.key,0,SETALL,sem_val);
+                semctl(shm_mem_inf.key, 0, SETALL, sem_val);
                 //Send update command
-                cmd_broadcast(clients,CMD_UPDATE,NULL);
+                cmd_broadcast(clients, CMD_UPDATE, NULL);
 
 
                 player = cmd_turn(clients, turn_num);
@@ -262,97 +282,20 @@ int main(int argc, char *argv[]) {
 
     //Clean e chiusura partita
     //Removing shared memory
-    if(shmdt(matrix) == -1){
+    if (shmdt(matrix) == -1) {
         //TODO Handling error ?
     }
-    if(shmctl(shm_mem_id,IPC_RMID,NULL) == -1){
+    if (shmctl(shm_mem_id, IPC_RMID, NULL) == -1) {
         //TODO Handling error ?
     }
 
     //Removing semaphore
-    if(semctl(shm_mem_sem_id,IPC_RMID,0) == -1){
+    if (semctl(shm_mem_sem_id, IPC_RMID, 0) == -1) {
         //TODO Handling error ?
     }
 
     //Close all pipes
-    for (int i = 0; i < 2; ++i){
-        msgctl(clients[i].message_qq, IPC_RMID, NULL);
+    for (int i = 0; i < 2; ++i) {
+        msgctl(clients[i].fifo_fd, IPC_RMID, NULL);
     }
-
-    //pipe id da file preciso per cominciare la connessione al server protetto da semaphore
-
-
-    /*
-     * S <- C (pid,mode,pipe)
-     *
-     *
-     *
-     * if single{
-     *  single process fork
-     * }else{
-     * fork(pipe1,pipe2)
-     * wait_antoher_client
-     * S <- C (pid,mode)
-     * linkpipe1 S -> C1
-     * linkpipe2 S -> C2
-     *
-     *  S -> broadcast_all()
-     *
-     * message_queue1("symbol[0]")
-     * message_queue2("symbol[1]")
-     * create pipe_rcv (forse message queue)
-     * create sem
-     * broadcast_pipe(pipe_rcv.id,sem.id)
-     *
-     * shared_memory(matrix)
-     * broadcast_pipe(set_sem_id,sem.id);
-     * broadcast_pipe(set_shared_memory.id,sem.id)
-     * broadcast_pipe(shared_memory.id,sem.id)
-     *
-     * pipe1(your_turn)
-     *
-     * // S <- C(pid,n_column)
-     *
-     * // S <- C(pid,commando)
-     *
-     * while(wait(input)){
-     * input = read_input();
-     *
-     * //Logic commands(pid, abbandono(CTRL-C)){
-     * winner(other);
-     * break;
-     * }
-     *
-     * check_right(sender)
-     *
-     *
-     *
-     * //Logic sem
-     * get_shared_mem(matrix)
-     * int result = runf4logic(matrix,input,pid,size[matrix]);
-     * save_shared_meme(matrix)
-     * //Logic sem
-     * broadcast_pipe("update")
-     * // C(read_shared_mem)
-     *
-     * if(result == error)
-     *  pipe<c>("error")
-     * }
-     * if(result == winner){
-     * broadcast_pipe("winner","symbol")
-     * break();
-     * }
-     * player()
-     * } <---
-     * destroy sem,shared,pipe
-     */
-
-
-
-
-    // simboli vanno comunicati ai due giocatori
-
-    //Logica per la connesione
-
-    //Creare area memoria per matrice
 }

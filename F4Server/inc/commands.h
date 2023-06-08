@@ -4,6 +4,7 @@
 #include <string.h>
 
 #define DEFAULT_PATH "/tmp/f4server"
+#define DEFAULT_DIR "/tmp/f4/"
 
 
 /**
@@ -38,8 +39,8 @@ union semun {
 
 struct client_info{
     pid_t pid;
-    key_t message_qq;
     char mode;
+    int fifo_fd;
 };
 
 
@@ -72,7 +73,7 @@ struct client_action{
  * @param cmd type of command
  * @param msg message if present
  */
-void cmd_broadcast(struct client_info clients[], long cmd, void* msg);
+void cmd_broadcast(struct client_info clients[], int cmd, void* msg);
 
 /**
  * Send via message queue a command
@@ -80,7 +81,7 @@ void cmd_broadcast(struct client_info clients[], long cmd, void* msg);
  * @param cmd type of command
  * @param msg message if present
  */
-void cmd_send(struct client_info client, long cmd, void* msg);
+void cmd_send(struct client_info client, int cmd, void* msg);
 
 
 /**
@@ -91,13 +92,14 @@ void cmd_send(struct client_info client, long cmd, void* msg);
  */
 struct client_info cmd_turn(struct client_info clients[],int turn);
 
-/**
- * GET THE SIZE OF THE STRUCT msg_buffer - long
- */
-ssize_t get_msg_size(long code);
 
 /*
  * Check if an external process is alive
  * @param pid process
  */
 int is_alive(pid_t pid);
+
+
+int cmd_mkfifo(int pid, char* path,int mode);
+
+int path_size(int id,char* path);
