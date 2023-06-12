@@ -6,12 +6,17 @@
 #include <stdlib.h>
 
 #include <sys/signal.h>
+#include <sys/shm.h>
 #include <unistd.h>
+
 #include "ui.h"
 
+#include "f4logic.h"
 #include "commands.h"
+#include "client_cmd.h"
 
 char status = 1;
+
 
 
 //funzione per il secondo segnale d'uscita ctrl+c
@@ -25,10 +30,6 @@ void alertHandler(int sig){
     printf("Sei sicuro di uscire se si ripremi ctrl + c\n");
     signal(SIGINT, signalHandler); // Primo ctrl +c
 }
-
-
-
-
 
 
 int main(int argc,char* argv[]) {
@@ -59,7 +60,6 @@ int main(int argc,char* argv[]) {
     while (access(path, F_OK) != 0) {
         //Wait till the file exists
     }
-
     errno = 0;
     printf("path : %s\n",path);
 
@@ -67,51 +67,91 @@ int main(int argc,char* argv[]) {
 
     int input_fd = open(path,O_RDONLY);
     //Wait for symbol
+
     char symbol;
     int code;
-    read(input_fd,&code, sizeof(int));
+    code = cmd_read_code(input_fd);
     read(input_fd,&symbol, sizeof(char));
     printf("code %d,char %c\n",code,symbol);
-    key_t memInfo;
 
-    read(input_fd,&code,sizeof (int));
-    read(input_fd,&memInfo,sizeof (memInfo));
-    printf("code %d ,key %d\n",code,memInfo);
 
-    while(status);
+    key_t output_qq_id;
+    code = cmd_read_code(input_fd);
+    read(input_fd, &output_qq_id, sizeof (output_qq_id));
+    printf("code %d ,key %d\n", code, output_qq_id);
 
-/*
-    initscr();
-    int x =0, y=0;
+    struct shared_mem_info shared_mem_info;
+    code = cmd_read_code(input_fd);
+    read(input_fd,&shared_mem_info, sizeof(shared_mem_info));
+    printf("shared_key %d\n",shared_mem_info.key);
+
+
+    int mem_id = shmget(shared_mem_info.key, shared_mem_info.column * shared_mem_info.row * sizeof(pid_t), 0666);
+    pid_t* board = shmat(mem_id, NULL, O_RDONLY);
+
+    int output_qq = msgget(output_qq_id,0666);
+
+
+    //Set the fd with a O_NON_BLOCK
+    fcntl(STDIN_FILENO,F_SETFL, fcntl(STDIN_FILENO,F_GETFL)|O_NONBLOCK);
+    fcntl(input_fd,F_SETFL, fcntl(input_fd,F_GETFL)|O_NONBLOCK);
+
+    int row = shared_mem_info.row;
+    int column = shared_mem_info.column;
+    char turn = 0;
     while (status){
-        int row = 5;
-        int column = 5;
-        for (int i = 0; i < row; ++i){
-            for (int j = 0; j < column; ++j){
-                printw("| ");
+        code = cmd_read_code(input_fd);
+            switch (code) {
+                case 0:
+                    break;
+                case CMD_UPDATE: {
+                    for (int i = 0; i < row; ++i) {
+                        for (int j = 0; j < column; ++j) {
+                            printf("|%d", GET_M(board, row, i, j));
+                        }
+                        printf("|\n");
+                    }
+                    break;
+                }
+                case CMD_TURN: {
+                    turn = 1;
+                    printf("It's your turn\n");
+                    break;
+                }
+                case CMD_INPUT_ERROR: {
+                    read(input_fd, &code, sizeof(int));
+                    if (code == 0) {
+                        //Wrong input input
+                        turn = 0;
+                    } else if (code == 1) {
+                        //Print not your turn
+                    }
+                }
+                    break;
+                case CMD_WINNER: {
+                    char winner;
+                    read(input_fd,&winner, sizeof(char));
+                    if(winner == symbol) {
+                        //You win
+                    }else {
+                        //You lose
+                    }
+                    break;
+                }
             }
-            printw("|\n");
-        }
-        //Todo read matrix
+            char input_char[20];
+            if(read(STDIN_FILENO,input_char, 20) > 0){
+                printf("test\n");
+                struct client_msg msg;
+                msg.mtype = 1;
+                msg.pid = getpid();
+                msg.move = atoi(input_char);
+                msgsnd(output_qq,&msg, sizeof(msg)- sizeof(long),0);
+            }
 
-
-        int x = getch();
-        if(x == 'z'){
-            break;
-        }
-        if(x == 'w'){
-            move(y++,x);
-        }else if(x == 's'){
-            move(y--,x);
-        }
-
-        refresh();
-
-        erase();
 
     }
-    endwin();
     printf("exit!\n");
 
-    return 0;*/
+    return 0;
 }

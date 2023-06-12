@@ -24,17 +24,16 @@ union semun {
 #define CMD_MSG_SIZE(X) (sizeof(X)*100)
 
 //TODO think cmd code better
-#define CMD_SET_SYMBOL (CMD_MSG_SIZE(char) + 0)
-#define CMD_SET_MSG_QQ_ID (CMD_MSG_SIZE(key_t) + 1)
-#define CMD_SET_SH_MEM (CMD_MSG_SIZE(struct shared_mem_info) + 2)
-#define CMD_UPDATE (3)
-#define CMD_TURN (4)
+#define CMD_SET_SYMBOL (CMD_MSG_SIZE(char) + 1)
+#define CMD_SET_MSG_QQ_ID (CMD_MSG_SIZE(key_t) + 2)
+#define CMD_SET_SH_MEM (CMD_MSG_SIZE(struct shared_mem_info) + 3)
+#define CMD_UPDATE (4)
+#define CMD_TURN (5)
 
-#define CMD_INPUT_ERROR (6)
+#define CMD_INPUT_ERROR (sizeof(int)+6)
 #define CMD_WINNER (CMD_MSG_SIZE(char)+7)
 
 
-#define CMD_CLI_ACTION (CMD_MSG_SIZE(struct client_action) + 5)
 
 
 struct client_info{
@@ -44,9 +43,10 @@ struct client_info{
 };
 
 
-struct msg_buffer{
+struct client_msg{
     long mtype;
-    void *msg;
+    pid_t pid;
+    int move;
 };
 
 struct shared_mem_info{
@@ -55,16 +55,6 @@ struct shared_mem_info{
     key_t key;
 };
 
-/**
- * Client action
- * pid = Process id of the sending process
- * n_column = if >= 0 then number of the play n_column
- * else -1 if abandon
- */
-struct client_action{
-    pid_t pid;
-    int column;
-};
 
 
 /**

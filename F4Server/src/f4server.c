@@ -76,11 +76,6 @@ int main(int argc, char *argv[]) {
     symbols[0] = *argv[3];
     symbols[1] = *argv[4];
 
-    //Creation FIFO for init connection
-    //No need to have sem has if the read or write is below PIPE_BUF then you can have multiple reader and writer
-    //https://www.gnu.org/software/libc/manual/html_node/Pipe-Atomicity.html
-    //Min size for PIPE_BUF is 512 byte
-
 
     signal(SIGINT, intHandler); // Read CTRL+C and stop the program
     signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
@@ -184,6 +179,8 @@ int main(int argc, char *argv[]) {
     printf("[%d]Sending input queue (key : %d)\n",n_game,key_msg_qq_input);
     cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
 
+    int msg_qq_input = msgget(key_msg_qq_input,0666|IPC_CREAT);
+
     //Calculating the size of the shared memory
     struct shared_mem_info shm_mem_inf;
     shm_mem_inf.row = row;
@@ -209,17 +206,17 @@ int main(int argc, char *argv[]) {
     printf("[%d]Create shared mem\n",n_game);
     //Create shared memory
     int shm_mem_id =
-            shmget(IPC_PRIVATE, row * column*sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
+            shmget(shm_mem_inf.key, row * column*sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
     if (shm_mem_id == -1) {
 
     }
     printf("[%d]Access shared mem (id : %d)\n",n_game,shm_mem_id);
-    pid_t* matrix = (pid_t *) shmat(shm_mem_id, NULL, 0);
+    pid_t* board = (pid_t *) shmat(shm_mem_id, NULL, 0);
 
 
     //Fill the array with 0
     printf("[%d]Cleaning array\n",n_game);
-    clean_array(matrix, row, column); //resetta la matrice
+    clean_array(board, row, column); //resetta la matrice
 
     printf("[%d]Sending shared mem info (key : %d)\n",n_game,shm_mem_inf.key);
     //Broadcast info of shared memory to clients
@@ -233,30 +230,30 @@ int main(int argc, char *argv[]) {
     //Tell the client to update their internal shared memory
     // legge da memoria condivisa CMD_UPDATE
     printf("[%d]Update board\n",n_game);
+
     cmd_broadcast(clients, CMD_UPDATE, NULL);
 
 
-
-
-    //Dopo aver conneso d
     //Set the turn to the first player
     int turn_num = 0; //turno primo client
     struct client_info player = cmd_turn(clients, turn_num); //giocatore che sta facendo la mossa
-    struct msg_buffer buffer;
+    struct client_msg client_mv_buffer;
     //Main game loop
+
     while (active) {
         //Read incoming msg queue non blocking
-      /*  if (msgrcv(key_msg_qq_input, &buffer, CMD_CLI_ACTION, CMD_CLI_ACTION / 100, MSG_NOERROR | IPC_NOWAIT) > 0) {
+
+        if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer)- sizeof(long), 1, MSG_NOERROR | IPC_NOWAIT)>0) {
             //Read the action
-            struct client_action action = *(struct client_action *) buffer.msg;
+            printf("msg_qq_input %d\n",msg_qq_input);
             //Check if a player has abandon the game
-            if (action.column == -1) {
+            if (client_mv_buffer.move == -1) {
                 //TODO Abandon logic
             }
             //Check if sender is the player
-            if (action.pid == player.pid) {
+            if (client_mv_buffer.pid == player.pid) {
                 //Play the move
-                pid_t result = f4_play(matrix, column, action.pid, column, row);
+                pid_t result = f4_play(board, column, client_mv_buffer.pid, column, row);
                 if (result == -1) {
                     //Wrong input
                     cmd_send(player, CMD_INPUT_ERROR, NULL);
@@ -274,12 +271,13 @@ int main(int argc, char *argv[]) {
                 cmd_broadcast(clients, CMD_UPDATE, NULL);
                 player = cmd_turn(clients, turn_num);
             }
-        }*/
+        }
+        sleep(1);
     }
 
     //Clean e chiusura partita
     //Removing shared memory
-    if (shmdt(matrix) == -1) {
+    if (shmdt(board) == -1) {
         //TODO Handling error ?
     }
     if (shmctl(shm_mem_id, IPC_RMID, NULL) == -1) {
