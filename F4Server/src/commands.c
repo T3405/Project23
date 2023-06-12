@@ -35,9 +35,11 @@ struct client_info cmd_turn(struct client_info clients[],int turn){
 int is_alive(pid_t pid){
     if(kill(pid,0) == -1){
         if(errno == ESRCH){
+            errno = 0;
             return 0;
         }
     }
+    errno = 0;
     return 1;
 }
 
