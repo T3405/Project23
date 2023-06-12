@@ -209,12 +209,13 @@ int main(int argc, char *argv[]) {
     printf("[%d]Create shared mem\n",n_game);
     //Create shared memory
     int shm_mem_id =
-            shmget(shm_mem_inf.key, row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH) == -1;
-    if (shm_mem_id) {
-        //TODO handle error if there is multiple shared_memory (should be impossible)
+            shmget(IPC_PRIVATE, row * column*sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
+    if (shm_mem_id == -1) {
+
     }
-    printf("[%d]Access shared mem\n",n_game);
-    pid_t *matrix = shmat(shm_mem_id, NULL, 0);
+    printf("[%d]Access shared mem (id : %d)\n",n_game,shm_mem_id);
+    pid_t* matrix = (pid_t *) shmat(shm_mem_id, NULL, 0);
+
 
     //Fill the array with 0
     printf("[%d]Cleaning array\n",n_game);
@@ -244,8 +245,6 @@ int main(int argc, char *argv[]) {
     struct msg_buffer buffer;
     //Main game loop
     while (active) {
-        sleep(1);
-        printf("server status : %b",active);
         //Read incoming msg queue non blocking
       /*  if (msgrcv(key_msg_qq_input, &buffer, CMD_CLI_ACTION, CMD_CLI_ACTION / 100, MSG_NOERROR | IPC_NOWAIT) > 0) {
             //Read the action
@@ -297,5 +296,5 @@ int main(int argc, char *argv[]) {
         cmd_rmfifo(clients[i].pid,DEFAULT_DIR,clients[i].fifo_fd);
     }
 
-    printf("[0] Game ended");
+    printf("[0] Game ended\n");
 }
