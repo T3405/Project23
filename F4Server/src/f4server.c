@@ -213,15 +213,11 @@ int main(int argc, char *argv[]) {
     if (shm_mem_id) {
         //TODO handle error if there is multiple shared_memory (should be impossible)
     }
-    errno = 0;
     printf("[%d]Access shared mem\n",n_game);
-    pid_t *matrix = (pid_t *) (pid_t **) shmat(shm_mem_inf.key, NULL, 0);
-    printf("error : %d\n",errno);
-    perror("error");
+    pid_t *matrix = shmat(shm_mem_id, NULL, 0);
 
     //Fill the array with 0
     printf("[%d]Cleaning array\n",n_game);
-    //TODO Fix block accesing the matrix
     clean_array(matrix, row, column); //resetta la matrice
 
     printf("[%d]Sending shared mem info (key : %d)\n",n_game,shm_mem_inf.key);
