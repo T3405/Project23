@@ -9,6 +9,7 @@
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <semaphore.h>
 #include <errno.h>
 
 #include "errExit.h"
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, intHandler); // Read CTRL+C and stop the program
     signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
+    signal(SIGTSTP,intHandler);
 
 
     //Creation default dir
@@ -170,8 +172,14 @@ int main(int argc, char *argv[]) {
         clients[i].fifo_fd = cmd_mkfifo(clients[i].pid,DEFAULT_DIR,O_WRONLY);
     }
     printf("[%d]Sending Symbols\n",n_game);
+    //The first symbol its own and the second is the enemy
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
+    cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[1]);
+
     cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[1]);
+    cmd_send(clients[1], CMD_SET_SYMBOL, &symbols[0]);
+
+
 
     //Broadcast input queue id unico
     key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid()); //key dei client
@@ -240,23 +248,29 @@ int main(int argc, char *argv[]) {
     struct client_msg client_mv_buffer;
     //Main game loop
 
+    char reading[2] = {0,0};
     while (active) {
         //Read incoming msg queue non blocking
-
         if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer)- sizeof(long), 1, MSG_NOERROR | IPC_NOWAIT)>0) {
-            //Read the action
-            printf("msg_qq_input %d\n",msg_qq_input);
             //Check if a player has abandon the game
             if (client_mv_buffer.move == -1) {
                 //TODO Abandon logic
             }
+            //sem_getvalue()
             //Check if sender is the player
-            if (client_mv_buffer.pid == player.pid) {
+            if (client_mv_buffer.pid != player.pid) {
+                int error = 1;
+                cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
+                continue;
+            }
                 //Play the move
-                pid_t result = f4_play(board, column, client_mv_buffer.pid, column, row);
+                pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid, column, row);
                 if (result == -1) {
                     //Wrong input
-                    cmd_send(player, CMD_INPUT_ERROR, NULL);
+                    int error = 0;
+                    cmd_send(player, CMD_INPUT_ERROR, &error);
+
+                    continue;
                 } else if (result == player.pid) {
                     //Winner
                     cmd_broadcast(clients, CMD_WINNER, NULL);
@@ -270,9 +284,7 @@ int main(int argc, char *argv[]) {
                 //Send update command
                 cmd_broadcast(clients, CMD_UPDATE, NULL);
                 player = cmd_turn(clients, turn_num);
-            }
         }
-        sleep(1);
     }
 
     //Clean e chiusura partita

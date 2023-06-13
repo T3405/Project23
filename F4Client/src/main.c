@@ -68,11 +68,15 @@ int main(int argc,char* argv[]) {
     int input_fd = open(path,O_RDONLY);
     //Wait for symbol
 
-    char symbol;
+    char symbol[2];
     int code;
     code = cmd_read_code(input_fd);
-    read(input_fd,&symbol, sizeof(char));
-    printf("code %d,char %c\n",code,symbol);
+    read(input_fd,&symbol[0], sizeof(char));
+    printf("code %d,char %c\n",code,symbol[0]);
+
+    code = cmd_read_code(input_fd);
+    read(input_fd,&symbol[1], sizeof(char));
+    printf("code %d,char %c\n",code,symbol[1]);
 
 
     key_t output_qq_id;
@@ -99,18 +103,31 @@ int main(int argc,char* argv[]) {
     int row = shared_mem_info.row;
     int column = shared_mem_info.column;
     char turn = 0;
+
     while (status){
         code = cmd_read_code(input_fd);
             switch (code) {
                 case 0:
                     break;
+                //Server set sem 2
                 case CMD_UPDATE: {
                     for (int i = 0; i < row; ++i) {
                         for (int j = 0; j < column; ++j) {
-                            printf("|%d", GET_M(board, row, i, j));
+                            pid_t player_id = GET_M(board,row,i,j);
+                            char print_symbol;
+                            if(player_id == getpid()){
+                                print_symbol = symbol[0];
+                            }else if (player_id == 0){
+                                print_symbol = ' ';
+                            }else{
+                                print_symbol = symbol[1];
+                            }
+                            printf("|%c", print_symbol);
                         }
                         printf("|\n");
                     }
+
+                    //sem--
                     break;
                 }
                 case CMD_TURN: {
@@ -119,11 +136,14 @@ int main(int argc,char* argv[]) {
                     break;
                 }
                 case CMD_INPUT_ERROR: {
-                    read(input_fd, &code, sizeof(int));
-                    if (code == 0) {
+                    int error;
+                    read(input_fd, &error, sizeof(int));
+                    if (error == 0) {
                         //Wrong input input
-                        turn = 0;
-                    } else if (code == 1) {
+                        printf("It's your turn\n");
+                        turn = 1;
+                    } else if (error == 1) {
+                        printf("It's not your turn\n");
                         //Print not your turn
                     }
                 }
@@ -131,21 +151,23 @@ int main(int argc,char* argv[]) {
                 case CMD_WINNER: {
                     char winner;
                     read(input_fd,&winner, sizeof(char));
-                    if(winner == symbol) {
+                    if(winner == symbol[0]) {
+                        printf("You are the winner!\n");
+                        break;
                         //You win
                     }else {
-                        //You lose
+                        printf("You lost!\n");
+                        break;
                     }
-                    break;
                 }
             }
             char input_char[20];
             if(read(STDIN_FILENO,input_char, 20) > 0){
-                printf("test\n");
                 struct client_msg msg;
                 msg.mtype = 1;
                 msg.pid = getpid();
-                msg.move = atoi(input_char);
+                //-1 because the board start at 1
+                msg.move = atoi(input_char)-1;
                 msgsnd(output_qq,&msg, sizeof(msg)- sizeof(long),0);
             }
 
