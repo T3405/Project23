@@ -74,7 +74,7 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
  *
  */
 
-//size_x = lenght of x
+//size_x = length of x
 //n_x = size of x
 int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
 
