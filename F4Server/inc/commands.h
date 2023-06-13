@@ -30,7 +30,7 @@ union semun {
 #define CMD_UPDATE (4)
 #define CMD_TURN (5)
 
-#define CMD_INPUT_ERROR (sizeof(int)+6)
+#define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+6)
 #define CMD_WINNER (CMD_MSG_SIZE(char)+7)
 
 
