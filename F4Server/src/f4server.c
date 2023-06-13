@@ -20,7 +20,6 @@
 static volatile int active = 1;
 
 
-
 void intHandler(int dummy) {
     active = 0;
 }
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
     if (argc == 6) {
 
         //TODO Fix
-        if (strcmp(argv[5],"-f") == 0) {
+        if (strcmp(argv[5], "-f") == 0) {
             printf("Unlinking old file\n");
             unlink(DEFAULT_PATH);
         }
@@ -80,11 +79,11 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, intHandler); // Read CTRL+C and stop the program
     signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
-    signal(SIGTSTP,intHandler);
+    signal(SIGTSTP, intHandler);
 
 
     //Creation default dir
-    if(mkdir(DEFAULT_DIR,0777) == -1){
+    if (mkdir(DEFAULT_DIR, 0777) == -1) {
         errExit("error creating : ");
     }
 
@@ -158,7 +157,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-   //Child ---------------------------------------------------------
+    //Child ---------------------------------------------------------
     //signal(SIGINT, intHandler); // Read CTRL+C and stop the program
     //signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
     printf("[%d]Starting game\n", n_game);
@@ -168,10 +167,10 @@ int main(int argc, char *argv[]) {
 
 
 
-    for (int i = 0; i < 2; ++i){
-        clients[i].fifo_fd = cmd_mkfifo(clients[i].pid,DEFAULT_DIR,O_WRONLY);
+    for (int i = 0; i < 2; ++i) {
+        clients[i].fifo_fd = cmd_mkfifo(clients[i].pid, DEFAULT_DIR, O_WRONLY);
     }
-    printf("[%d]Sending Symbols\n",n_game);
+    printf("[%d]Sending Symbols\n", n_game);
     //The first symbol its own and the second is the enemy
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[0]);
     cmd_send(clients[0], CMD_SET_SYMBOL, &symbols[1]);
@@ -184,10 +183,10 @@ int main(int argc, char *argv[]) {
     //Broadcast input queue id unico
     key_t key_msg_qq_input = ftok(DEFAULT_PATH, getpid()); //key dei client
 
-    printf("[%d]Sending input queue (key : %d)\n",n_game,key_msg_qq_input);
+    printf("[%d]Sending input queue (key : %d)\n", n_game, key_msg_qq_input);
     cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
 
-    int msg_qq_input = msgget(key_msg_qq_input,0666|IPC_CREAT);
+    int msg_qq_input = msgget(key_msg_qq_input, 0666 | IPC_CREAT);
 
     //Calculating the size of the shared memory
     struct shared_mem_info shm_mem_inf;
@@ -195,38 +194,38 @@ int main(int argc, char *argv[]) {
     shm_mem_inf.column = column;
 
     //Key for the shared memory and the semaphore
-    printf("[%d]Key creation\n",n_game);
+    printf("[%d]Key creation\n", n_game);
     shm_mem_inf.key = ftok(".", getpid()); //key matrice
 
 
 
     //Creation of the semaphore
-    printf("[%d]Sem creation(key : %d)\n", n_game,shm_mem_inf.key);
-   int shm_mem_sem_id = semget(shm_mem_inf.key, 2, IPC_CREAT);
+    printf("[%d]Sem creation(key : %d)\n", n_game, shm_mem_inf.key);
+    int shm_mem_sem_id = semget(shm_mem_inf.key, 2, IPC_CREAT);
 
     union semun sem_val;
     sem_val.val = 0;
     //Set semaphore to 1
     //TODO maybe remove semaphore
-    printf("[%d]Update sem\n",n_game);
+    printf("[%d]Update sem\n", n_game);
     semctl(shm_mem_inf.key, 0, SETALL, sem_val);
 
-    printf("[%d]Create shared mem\n",n_game);
+    printf("[%d]Create shared mem\n", n_game);
     //Create shared memory
     int shm_mem_id =
-            shmget(shm_mem_inf.key, row * column*sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
+            shmget(shm_mem_inf.key, row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
     if (shm_mem_id == -1) {
 
     }
-    printf("[%d]Access shared mem (id : %d)\n",n_game,shm_mem_id);
-    pid_t* board = (pid_t *) shmat(shm_mem_id, NULL, 0);
+    printf("[%d]Access shared mem (id : %d)\n", n_game, shm_mem_id);
+    pid_t *board = (pid_t *) shmat(shm_mem_id, NULL, 0);
 
 
     //Fill the array with 0
-    printf("[%d]Cleaning array\n",n_game);
+    printf("[%d]Cleaning array\n", n_game);
     clean_array(board, row, column); //resetta la matrice
 
-    printf("[%d]Sending shared mem info (key : %d)\n",n_game,shm_mem_inf.key);
+    printf("[%d]Sending shared mem info (key : %d)\n", n_game, shm_mem_inf.key);
     //Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
 
@@ -237,7 +236,7 @@ int main(int argc, char *argv[]) {
 
     //Tell the client to update their internal shared memory
     // legge da memoria condivisa CMD_UPDATE
-    printf("[%d]Update board\n",n_game);
+    printf("[%d]Update board\n", n_game);
 
     cmd_broadcast(clients, CMD_UPDATE, NULL);
 
@@ -248,10 +247,11 @@ int main(int argc, char *argv[]) {
     struct client_msg client_mv_buffer;
     //Main game loop
 
-    char reading[2] = {0,0};
+    char reading[2] = {0, 0};
     while (active) {
         //Read incoming msg queue non blocking
-        if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer)- sizeof(long), 1, MSG_NOERROR | IPC_NOWAIT)>0) {
+        if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer) - sizeof(long), 1,
+                   MSG_NOERROR | IPC_NOWAIT) > 0) {
             //Check if a player has abandon the game
             if (client_mv_buffer.move == -1) {
                 //TODO Abandon logic
@@ -263,29 +263,33 @@ int main(int argc, char *argv[]) {
                 cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
                 continue;
             }
-                //Play the move
-                pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid, column, row);
-                if (result == -1) {
-                    //Wrong input
-                    int error = 0;
-                    cmd_send(player, CMD_INPUT_ERROR, &error);
+            //Play the move
+            pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid, column, row);
+            if (result == -1) {
+                //Wrong input
+                int error = 0;
+                cmd_send(player, CMD_INPUT_ERROR, &error);
 
-                    continue;
-                } else if (result == player.pid) {
-                    //Winner
-                    cmd_broadcast(clients, CMD_WINNER, NULL);
-                    active = 0;
-                }
-                turn_num = !turn_num;
+                continue;
+            } else if (result == player.pid) {
+                //Winner
+                cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
+                break;
+            }
+            turn_num = !turn_num;
 
-                //TODO Unlock the semaphore
-                sem_val.val = 2;
-                semctl(shm_mem_inf.key, 0, SETALL, sem_val);
-                //Send update command
-                cmd_broadcast(clients, CMD_UPDATE, NULL);
-                player = cmd_turn(clients, turn_num);
+            //TODO Unlock the semaphore
+            sem_val.val = 2;
+            semctl(shm_mem_inf.key, 0, SETALL, sem_val);
+            //Send update command
+            cmd_broadcast(clients, CMD_UPDATE, NULL);
+            player = cmd_turn(clients, turn_num);
         }
     }
+
+    //Tell the clients that the server is shutting down
+    if (!active)
+        cmd_broadcast(clients, CMD_SERVER_OFFLINE, NULL);
 
     //Clean e chiusura partita
     //Removing shared memory
@@ -303,8 +307,9 @@ int main(int argc, char *argv[]) {
 
     //Close all pipes
     for (int i = 0; i < 2; ++i) {
-        cmd_rmfifo(clients[i].pid,DEFAULT_DIR,clients[i].fifo_fd);
+        cmd_rmfifo(clients[i].pid, DEFAULT_DIR, clients[i].fifo_fd);
     }
+
 
     printf("[0] Game ended\n");
 }

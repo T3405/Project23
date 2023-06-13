@@ -32,6 +32,7 @@ union semun {
 
 #define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+6)
 #define CMD_WINNER (CMD_MSG_SIZE(char)+7)
+#define CMD_SERVER_OFFLINE (8)
 
 
 

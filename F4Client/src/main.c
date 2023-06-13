@@ -151,6 +151,7 @@ int main(int argc,char* argv[]) {
                 case CMD_WINNER: {
                     char winner;
                     read(input_fd,&winner, sizeof(char));
+                    printf("winner : %c\n",winner);
                     if(winner == symbol[0]) {
                         printf("You are the winner!\n");
                         break;
