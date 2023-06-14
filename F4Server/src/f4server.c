@@ -6,10 +6,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
-#include <semaphore.h>
 #include <errno.h>
 
 #include "errExit.h"
@@ -158,8 +156,6 @@ int main(int argc, char *argv[]) {
     }
 
     //Child ---------------------------------------------------------
-    //signal(SIGINT, intHandler); // Read CTRL+C and stop the program
-    //signal(SIGTERM, intHandler); // Read CTRL+C and stop the program
     printf("[%d]Starting game\n", n_game);
 
     //Send the symbols to the clients
@@ -201,14 +197,7 @@ int main(int argc, char *argv[]) {
 
     //Creation of the semaphore
     printf("[%d]Sem creation(key : %d)\n", n_game, shm_mem_inf.key);
-    int shm_mem_sem_id = semget(shm_mem_inf.key, 2, IPC_CREAT);
 
-    union semun sem_val;
-    sem_val.val = 0;
-    //Set semaphore to 1
-    //TODO maybe remove semaphore
-    printf("[%d]Update sem\n", n_game);
-    semctl(shm_mem_inf.key, 0, SETALL, sem_val);
 
     printf("[%d]Create shared mem\n", n_game);
     //Create shared memory
@@ -247,7 +236,7 @@ int main(int argc, char *argv[]) {
     struct client_msg client_mv_buffer;
     //Main game loop
 
-    char reading[2] = {0, 0};
+    char test;
     while (active) {
         //Read incoming msg queue non blocking
         if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer) - sizeof(long), 1,
@@ -278,9 +267,6 @@ int main(int argc, char *argv[]) {
             }
             turn_num = !turn_num;
 
-            //TODO Unlock the semaphore
-            sem_val.val = 2;
-            semctl(shm_mem_inf.key, 0, SETALL, sem_val);
             //Send update command
             cmd_broadcast(clients, CMD_UPDATE, NULL);
             player = cmd_turn(clients, turn_num);
@@ -300,10 +286,6 @@ int main(int argc, char *argv[]) {
         //TODO Handling error ?
     }
 
-    //Removing semaphore
-    if (semctl(shm_mem_sem_id, IPC_RMID, 0) == -1) {
-        //TODO Handling error ?
-    }
 
     //Close all pipes
     for (int i = 0; i < 2; ++i) {
