@@ -63,6 +63,8 @@ int main(int argc, char *argv[]) {
     //Wait for the FIFO file to be created at /tmp/f4/<pid>
     char path[1024];
     sprintf(path, "%s%d", DEFAULT_CLIENTS_DIR, clientInfo.pid);
+
+    printf("Waiting for another client to connect to the server\n");
     while (access(path, F_OK) != 0);
     errno = 0;
 
@@ -160,9 +162,10 @@ int main(int argc, char *argv[]) {
                 while(read(input_fd, &winner, sizeof(char)) <= 0);
                 if (winner == symbol.own) {
                     printf("You are the winner!\n");
-                    //You win
-                } else {
+                } else if (winner == symbol.enemy) {
                     printf("You lost!\n");
+                }else if (winner == '\0'){
+                    printf("Draw!\n");
                 }
                 active = 0;
                 break;
@@ -176,8 +179,6 @@ int main(int argc, char *argv[]) {
             msg.pid = getpid();
             //-1 because the board start at 1
             msg.move = abs(atoi(input_char) - 1);
-
-
             msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
         }
     }
@@ -185,11 +186,19 @@ int main(int argc, char *argv[]) {
         struct client_msg msg;
         msg.mtype = 1;
         msg.pid = getpid();
-        //-1 = abandon
+        //-1 = Forfeit
         msg.move = -1;
         msgsnd(output_qq,&msg, sizeof(msg)- sizeof(long),0);
+    }else{
+        printf("Do you want to replay the game?\nY/N\n");
+        char selection;
+        while (read(STDIN_FILENO,&selection, sizeof(char)) <= 0);
+        if(selection == 'Y' || selection =='y'){
+            execv(argv[0],argv);
+        }
     }
+    //Deataching shared memory
     shmdt(board);
-    printf("exit!\n");
+    printf("Closing!\n");
     return 0;
 }
