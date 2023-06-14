@@ -65,10 +65,16 @@ int main(int argc, char *argv[]) {
     sprintf(path, "%s%d", DEFAULT_CLIENTS_DIR, clientInfo.pid);
 
     printf("Waiting for another client to connect to the server\n");
-    while (access(path, F_OK) != 0);
+    while (access(path, F_OK) != 0){
+        if(!active) {
+            printf("Server offline\n");
+            return 0;
+        }
+    }
+    //Reset errno
     errno = 0;
 
-    //printf("path : %s\n",path);
+
 
 
 
