@@ -4,7 +4,7 @@
 #include <string.h>
 
 #define DEFAULT_PATH "/tmp/f4server"
-#define DEFAULT_DIR "/tmp/f4/"
+#define DEFAULT_CLIENTS_DIR "/tmp/f4/"
 
 
 /**

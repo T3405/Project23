@@ -15,12 +15,14 @@
 #include "commands.h"
 #include "client_cmd.h"
 
-char status = 1;
+char active = 1;
+char quit = 0;
 
 
 //funzione per il secondo segnale d'uscita ctrl+c
 void signal_close(int signal) {
-    status = 0;
+    active = 0;
+    quit = 1;
 }
 
 //funzione per il primo segnale d'uscita ctrl+c
@@ -57,7 +59,7 @@ int main(int argc, char *argv[]) {
 
     //Wait for the FIFO file to be created at /tmp/f4/<pid>
     char path[1024];
-    sprintf(path, "%s%d", DEFAULT_DIR, clientInfo.pid);
+    sprintf(path, "%s%d", DEFAULT_CLIENTS_DIR, clientInfo.pid);
     while (access(path, F_OK) != 0);
     errno = 0;
 
@@ -108,18 +110,18 @@ int main(int argc, char *argv[]) {
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
     fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK);
 
+
     unsigned int row = shared_mem_info.row;
     unsigned int column = shared_mem_info.column;
-    char turn = 0;
 
-
-    while (status) {
+    while (active) {
+        //Read the start of the fifo
         code = cmd_read_code(input_fd);
         switch (code) {
             case 0:
                 break;
-                //Server set sem 2
             case CMD_UPDATE: {
+                //Print matrix to screen
                 for (int i = 0; i < row; ++i) {
                     for (int j = 0; j < column; ++j) {
                         pid_t player_id = GET_M(board, row, i, j);
@@ -138,51 +140,56 @@ int main(int argc, char *argv[]) {
                 break;
             }
             case CMD_TURN: {
-                turn = 1;
                 printf("It's your turn\n");
                 break;
             }
             case CMD_INPUT_ERROR: {
-                int error;
-                read(input_fd, &error, sizeof(int));
-                if (error == 0) {
+                int error_code;
+                read(input_fd, &error_code, sizeof(int));
+                printf("error : %d\n", error_code);
+                if (error_code == 1) {
                     //Wrong input input
-                    printf("It's your turn\n");
-                    turn = 1;
-                } else if (error == 1) {
+                    printf("Wrong input please try again\n");
+                } else if (error_code == 2) {
                     printf("It's not your turn\n");
                     //Print not your turn
                 }
             }
                 break;
             case CMD_WINNER: {
-                char winner;
+                char winner = 0;
                 read(input_fd, &winner, sizeof(char));
-                printf("winner : %c\n", winner);
                 if (winner == symbol[0]) {
                     printf("You are the winner!\n");
-                    break;
                     //You win
                 } else {
                     printf("You lost!\n");
-                    break;
                 }
+                active = 0;
+                break;
             }
         }
         char input_char[20];
+        //Read STDIN and send to the msg_qq
         if (read(STDIN_FILENO, input_char, 20) > 0) {
             struct client_msg msg;
             msg.mtype = 1;
             msg.pid = getpid();
             //-1 because the board start at 1
-            msg.move = atoi(input_char) - 1;
+            msg.move = abs(atoi(input_char) - 1);
+
 
             msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
         }
-
-
+    }
+    if(quit){
+        struct client_msg msg;
+        msg.mtype = 1;
+        msg.pid = getpid();
+        //-1 = abandon
+        msg.move = -1;
+        msgsnd(output_qq,&msg, sizeof(msg)- sizeof(long),0);
     }
     printf("exit!\n");
-
     return 0;
 }
