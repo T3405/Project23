@@ -62,26 +62,6 @@ int semaphore_use(int sem_id,int sem_num){
     arg.val = 0;
     return semctl(sem_id,sem_num,SETVAL,arg);
 }
-
-void remove_from_key(int pid){
-    key_t mem = ftok(".",pid);
-    key_t msg = ftok(DEFAULT_PATH,pid);
-
-    int default_flags = S_IWUSR | S_IRUSR;
-    int msg_id = msgget(msg,default_flags);
-    if(msg_id != -1){
-        msgctl(msg_id,IPC_RMID,NULL);
-    }
-    int sem_id = semget(mem,2,default_flags);
-    if(msg_id != -1){
-        semctl(sem_id,2,IPC_RMID);
-    }
-    int mem_id = shmget()
-    if(msg_id != -1){
-        semctl(sem_id,2,IPC_RMID);
-    }
-}
-
 /************************************
 *Matricola VR473680
 *Nome e cognome Alex Zanetti

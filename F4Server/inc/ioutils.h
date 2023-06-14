@@ -26,8 +26,6 @@ int semaphore_set(int sem_id,int val);
  */
 int semaphore_use(int sem_id,int sem_num);
 
-void remove_from_key(int pid);
-
 
 /************************************
 *Matricola VR473680,
