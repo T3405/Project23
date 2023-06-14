@@ -5,50 +5,53 @@
 
 #define DEFAULT_PATH "/tmp/f4server"
 #define DEFAULT_CLIENTS_DIR "/tmp/f4/"
+#define FTOK_MSG DEFAULT_PATH
+#define FTOK_SMH DEFAULT_CLIENTS_DIR
+#define FTOK_SEM DEFAULT_CLIENTS_DIR
 
 
 /**
  * The CMD Code will be used like these
  * Example : 123
  * 123 / 100 = 1 = size of the msg
- * 123 = mtype
+ * 123 = type
  */
 
 #define CMD_MSG_SIZE(X) (sizeof(X)*100)
 
-//TODO think cmd code better
-#define CMD_SET_SYMBOL (CMD_MSG_SIZE(char) + 1)
-#define CMD_SET_MSG_QQ_ID (CMD_MSG_SIZE(key_t) + 2)
-#define CMD_SET_SH_MEM (CMD_MSG_SIZE(struct shared_mem_info) + 3)
-#define CMD_UPDATE (4)
-#define CMD_TURN (5)
+#define CMD_SET_SYMBOLS (CMD_MSG_SIZE(struct symbol_info) + 1)
+#define CMD_SET_INFO (CMD_MSG_SIZE(struct game_info) + 2)
+#define CMD_UPDATE (3)
+#define CMD_TURN (4)
 
-#define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+6)
-#define CMD_WINNER (CMD_MSG_SIZE(char)+7)
-#define CMD_SERVER_OFFLINE (8)
+#define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+5)
+#define CMD_WINNER (CMD_MSG_SIZE(char)+6)
+#define CMD_SERVER_OFFLINE (7)
 
 
-
-
-struct client_info{
+struct client_info {
     pid_t pid;
     char mode;
     int fifo_fd;
 };
 
+struct symbol_info {
+    int pos;
+    char own;
+    char enemy;
+};
 
-struct client_msg{
+struct client_msg {
     long mtype;
     pid_t pid;
     int move;
 };
 
-struct shared_mem_info{
+struct game_info {
     size_t column;
     size_t row;
-    key_t key;
+    int id;
 };
-
 
 
 /**
@@ -57,7 +60,7 @@ struct shared_mem_info{
  * @param cmd type of command
  * @param msg message if present
  */
-void cmd_broadcast(struct client_info clients[], int cmd, void* msg);
+void cmd_broadcast(struct client_info clients[], int cmd, void *msg);
 
 /**
  * Send via message queue a command
@@ -65,7 +68,7 @@ void cmd_broadcast(struct client_info clients[], int cmd, void* msg);
  * @param cmd type of command
  * @param msg message if present
  */
-void cmd_send(struct client_info client, int cmd, void* msg);
+void cmd_send(struct client_info client, int cmd, void *msg);
 
 
 /**
@@ -74,18 +77,25 @@ void cmd_send(struct client_info client, int cmd, void* msg);
  * @param turn 0 or 1 Turn
  * @return The selected client
  */
-struct client_info cmd_turn(struct client_info clients[],int turn);
+struct client_info cmd_turn(struct client_info clients[], int turn);
 
 
-/*
+/**
  * Check if an external process is alive
  * @param pid process
+ * @return false if the process does not exists
  */
 int is_alive(pid_t pid);
 
 
-int cmd_mkfifo(int pid, char* path,int mode);
+int cmd_mkfifo(int pid, char *path, int mode);
 
-int cmd_rmfifo(int pid,char* path,int fd);
+int cmd_rmfifo(int pid, char *path, int fd);
 
-int path_size(int id,char* path);
+int path_size(int id, char *path);
+
+/************************************
+*Matricola VR473680
+*Nome e cognome Alex Zanetti
+*Data di realizzazione 28 / 4 / 2023
+*************************************/

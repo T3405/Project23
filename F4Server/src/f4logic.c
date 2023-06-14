@@ -62,7 +62,14 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
             }
         }
     }
-    return 0;
+
+    for (int i = 0; i < n_column * n_row; ++i){
+        if(matrix[i] == 0){
+            return 0;
+        }
+    }
+
+    return -2;
 }
 
 
@@ -83,10 +90,6 @@ int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
         return -1;
     }
 
-    //Controlla che ci sia spazio sulla colonna
-
-    //TODO fix matrix orientation
-
     char is_max_col = 0;
     int i;
     for (i = n_row - 1; i >= 0; i--) {
@@ -99,6 +102,7 @@ int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
     if (!is_max_col) {
         return -1;
     }
+
     return check_winner(matrix, n_column, n_row);
 }
 
@@ -110,3 +114,8 @@ void clean_array(pid_t *matrix, int n_row, int n_column) {
 }
 
 
+/************************************
+*Matricola VR473680
+*Nome e cognome Alex Zanetti
+*Data di realizzazione 28 / 4 / 2023
+*************************************/

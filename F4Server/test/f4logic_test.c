@@ -6,17 +6,6 @@ const int n_column = 5, n_row = 6;
 
 int count = 0;
 
-/*
-0 5 10 15 20
-1 6 11 16 21
-2 7 12 17 22
-3 8 13 18 23
-4 9 14 19 24
-5 10 15 20 25
-
-0 1
-0 * 5 + 0 = 5
- */
 void print_matrix(const int *matrix) {
     printf("\nprint array number %d\n", count++);
     for (int i = 0; i < n_row; ++i){
@@ -72,3 +61,8 @@ int main() {
 
 }
 
+/************************************
+*Matricola VR473680
+*Nome e cognome Alex Zanetti
+*Data di realizzazione 30 / 5 / 2023
+*************************************/

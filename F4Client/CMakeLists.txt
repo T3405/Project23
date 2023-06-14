@@ -7,5 +7,5 @@ find_package(Curses REQUIRED)
 
 include_directories(../F4Server/inc/ inc/ ${CURSES_INCLUDE_DIR})
 
-add_executable(F4Client src/main.c inc/ui.h src/ui.c inc/client_cmd.h src/client_cmd.c)
+add_executable(F4Client src/main.c inc/ui.h src/ui.c inc/client_cmd.h src/client_cmd.c ../F4Server/src/ioutils.c)
 target_link_libraries(F4Client ${CURSES_LIBRARIES})

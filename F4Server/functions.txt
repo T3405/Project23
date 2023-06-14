@@ -14,7 +14,7 @@ if type == '*'{
 Client1 = c1
 Client2 = c2
 
-//cmd symbols CMD_SET_SYMBOL
+//cmd symbols CMD_SET_SYMBOLS
 Server -> c1(char symbol[0])
 Server -> c2(char symbol[1])
 

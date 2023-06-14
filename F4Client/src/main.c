@@ -8,12 +8,14 @@
 #include <sys/signal.h>
 #include <sys/shm.h>
 #include <unistd.h>
+#include <sys/sem.h>
 
 #include "ui.h"
 
 #include "f4logic.h"
 #include "commands.h"
 #include "client_cmd.h"
+#include "ioutils.h"
 
 char active = 1;
 char quit = 0;
@@ -35,6 +37,7 @@ void signal_alert(int sig) {
 int main(int argc, char *argv[]) {
 
     signal(SIGINT, signal_alert);
+    signal(SIGUSR1, signal_close);
 
     //Open default path for fifo
     int fd = open(DEFAULT_PATH, O_WRONLY);
@@ -72,38 +75,34 @@ int main(int argc, char *argv[]) {
     //Wait for symbol
 
 
-    //Read its own symbol
-    char symbol[2];
+
     int code;
+    //Read its own symbol
+    struct symbol_info symbol;
     code = cmd_read_code(input_fd);
-    read(input_fd, &symbol[0], sizeof(char));
-    printf("code %d,char %c\n", code, symbol[0]);
+    read(input_fd, &symbol, sizeof(symbol));
+    printf("position %d\n",symbol.pos);
+    printf("own %d,char %c\n", code, symbol.own);
+    printf("enemy %d,char %c\n", code, symbol.enemy);
 
-    //Read opponent symbol
+
+    //Read gm_info (row,column,key_t shared_mem)
+    struct game_info gm_info;
     code = cmd_read_code(input_fd);
-    read(input_fd, &symbol[1], sizeof(char));
-    printf("code %d,char %c\n", code, symbol[1]);
+    read(input_fd, &gm_info, sizeof(gm_info));
+    printf("game number %d\n", gm_info.id);
 
-
-    //Read msg_qq key_t
-    key_t output_qq_id;
-    code = cmd_read_code(input_fd);
-    read(input_fd, &output_qq_id, sizeof(output_qq_id));
-    printf("code %d ,key %d\n", code, output_qq_id);
-
-    //Read shared_mem_info (row,column,key_t shared_mem)
-    struct shared_mem_info shared_mem_info;
-    code = cmd_read_code(input_fd);
-    read(input_fd, &shared_mem_info, sizeof(shared_mem_info));
-    printf("shared_key %d\n", shared_mem_info.key);
 
 
     //Attach shared-memory
-    int mem_id = shmget(shared_mem_info.key, shared_mem_info.column * shared_mem_info.row * sizeof(pid_t), 0666);
+    int mem_id = shmget(ftok(FTOK_SMH,gm_info.id), gm_info.column * gm_info.row * sizeof(pid_t), 0666);
     pid_t *board = shmat(mem_id, NULL, O_RDONLY);
 
+    //Open semaphore
+    int sem_id = semget(ftok(FTOK_SEM,gm_info.id), 2, S_IRUSR | S_IWUSR);
+
     //Open msg_qq
-    int output_qq = msgget(output_qq_id, 0666);
+    int output_qq = msgget(ftok(FTOK_MSG,gm_info.id), 0666);
 
 
     //Set the both fd with a O_NON_BLOCK
@@ -111,8 +110,8 @@ int main(int argc, char *argv[]) {
     fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK);
 
 
-    unsigned int row = shared_mem_info.row;
-    unsigned int column = shared_mem_info.column;
+    unsigned int row = gm_info.row;
+    unsigned int column = gm_info.column;
 
     while (active) {
         //Read the start of the fifo
@@ -127,15 +126,16 @@ int main(int argc, char *argv[]) {
                         pid_t player_id = GET_M(board, row, i, j);
                         char print_symbol;
                         if (player_id == getpid()) {
-                            print_symbol = symbol[0];
+                            print_symbol = symbol.own;
                         } else if (player_id == 0) {
                             print_symbol = ' ';
                         } else {
-                            print_symbol = symbol[1];
+                            print_symbol = symbol.enemy;
                         }
                         printf("|%c", print_symbol);
                     }
                     printf("|\n");
+                    semaphore_use(sem_id,symbol.pos);
                 }
                 break;
             }
@@ -144,9 +144,8 @@ int main(int argc, char *argv[]) {
                 break;
             }
             case CMD_INPUT_ERROR: {
-                int error_code;
-                read(input_fd, &error_code, sizeof(int));
-                printf("error : %d\n", error_code);
+                int error_code = 0;
+                while(read(input_fd, &error_code, sizeof(int)) <= 0);
                 if (error_code == 1) {
                     //Wrong input input
                     printf("Wrong input please try again\n");
@@ -158,8 +157,8 @@ int main(int argc, char *argv[]) {
                 break;
             case CMD_WINNER: {
                 char winner = 0;
-                read(input_fd, &winner, sizeof(char));
-                if (winner == symbol[0]) {
+                while(read(input_fd, &winner, sizeof(char)) <= 0);
+                if (winner == symbol.own) {
                     printf("You are the winner!\n");
                     //You win
                 } else {
@@ -190,6 +189,7 @@ int main(int argc, char *argv[]) {
         msg.move = -1;
         msgsnd(output_qq,&msg, sizeof(msg)- sizeof(long),0);
     }
+    shmdt(board);
     printf("exit!\n");
     return 0;
 }

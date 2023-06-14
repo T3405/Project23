@@ -7,12 +7,12 @@
 #include <sys/stat.h>
 
 
-//client 0 cmd : CMD_SET_SYMBOL : char
+//client 0 cmd : CMD_SET_SYMBOLS : char
 void cmd_send(struct client_info client, int cmd, void* msg){
 
     write(client.fifo_fd,&cmd,sizeof(cmd));
     long size = cmd / 100;
-    printf("pid : %d, code : %d , size : %ld , fd : %d\n",client.pid,cmd,size,client.fifo_fd);
+    //printf("pid : %d, code : %d , size : %ld , fd : %d\n",client.pid,cmd,size,client.fifo_fd);
     if(cmd != 0){
         write(client.fifo_fd,msg, size);
     }
@@ -63,5 +63,10 @@ int cmd_rmfifo(int pid,char* path,int fd){
     sprintf(buffer,"%s%d",path,pid);
     close(fd);
     unlink(buffer);
-    printf("removing path : %s\n",buffer);
 }
+
+/************************************
+*Matricola VR473680
+*Nome e cognome Alex Zanetti
+*Data di realizzazione 28 / 4 / 2023
+*************************************/

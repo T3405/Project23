@@ -10,7 +10,6 @@
  */
 #define GET_M(V, X, Y, Z) (V[Z*X+Y])
 
-#define PRINT_M(X, Y, Z) printf("Row : %d , Column : %d\nIndex : %d\n",Y,Z,(Z*X+Y));
 
 
 /**
@@ -29,3 +28,10 @@ int f4_play(pid_t* matrix, int column, pid_t player, int n_column, int n_row);
  * @param matrix the matrix to fill
  */
 void clean_array(pid_t* matrix, int n_row, int n_column);
+
+
+/************************************
+*Matricola VR473680
+*Nome e cognome Alex Zanetti
+*Data di realizzazione 28 / 4 / 2023
+*************************************/
