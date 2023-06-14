@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -147,7 +146,6 @@ int main(int argc, char *argv[]) {
             pid_t child;
             int status;
             while ((child = waitpid(0, &status, 0)) != -1) {
-                remove_from_key(child);
                 printf("[Main]Child %d has been terminated\n", child);
             }
 
@@ -175,73 +173,56 @@ int main(int argc, char *argv[]) {
     }
 
 
-    //Broadcast the key_t for the input msg qq
-    key_t key_msg_qq_input = ftok(DEFAULT_PATH, n_game); //key dei client
     //Creation msg qq
-    int msg_qq_input = msgget(key_msg_qq_input, 0666 | IPC_CREAT);
-
-    printf("[%d]Sending input queue (key : %d)\n", n_game, key_msg_qq_input);
-    cmd_broadcast(clients, CMD_SET_MSG_QQ_ID, &key_msg_qq_input);
+    int msg_qq_input = msgget(ftok(FTOK_MSG, n_game), 0666 | IPC_CREAT);
+    if (msg_qq_input == -1) {
+        perror("msg queue creation error");
+        active = 0;
+    }
 
     //Calculating the size of the shared memory
-    struct game_info shm_mem_inf;
-    shm_mem_inf.row = row;
-    shm_mem_inf.column = column;
-
-    //Key for the shared memory and the semaphore
-    printf("[%d]Key creation\n", n_game);
-    shm_mem_inf.key = ftok(".", n_game); //key shared_mem
-
-
     printf("[%d]Create shared mem\n", n_game);
     //Create shared memory
     int shm_id =
-            shmget(shm_mem_inf.key, row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
+            shmget(ftok(FTOK_SEM, n_game), row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
     if (shm_id == -1) {
-
+        perror("shared memory creation error");
+        active = 0;
     }
     printf("[%d]Attach shared mem (id : %d)\n", n_game, shm_id);
     pid_t *board = (pid_t *) shmat(shm_id, NULL, 0);
 
     printf("[%d]Create Semaphore\n",n_game);
-    int semaphore_id = semaphore_create(shm_mem_inf.key);
+    int semaphore_id = semaphore_create(ftok(FTOK_SEM,n_game));
 
 
-    //Fill the array with 0
-    printf("[%d]Cleaning array\n", n_game);
-    clean_array(board, row, column);
-
-    printf("[%d]Sending shared mem info (key : %d)\n", n_game, shm_mem_inf.key);
+    struct game_info gm_info;
+    gm_info.row = row;
+    gm_info.column = column;
+    gm_info.id = n_game;
+    printf("[%d]Sending game info (id : %d)\n", n_game, gm_info.id);
     //Broadcast info of shared memory to clients
-    cmd_broadcast(clients, CMD_SET_SH_MEM, &shm_mem_inf);
-
-    //Tell the client to read the shared memory
-    // legge da memoria condivisa CMD_UPDATE
-    printf("[%d]Update board\n", n_game);
-    semaphore_set(semaphore_id,1);
-    cmd_broadcast(clients, CMD_UPDATE, NULL);
+    cmd_broadcast(clients, CMD_SET_INFO, &gm_info);
 
 
-    //Set the turn to the first player
+
     int turn_num = 0; //turno primo client
-    struct client_info player = cmd_turn(clients, turn_num); //giocatore che sta facendo la mossa
+    struct client_info player;
     struct client_msg client_mv_buffer;
-    unsigned long alive_timer = time(NULL);
+    //TODO add timer
     //Main game loop
+    if(active) {
+        //Tell the client to read the shared memory
+        // legge da memoria condivisa CMD_UPDATE
+        //Fill the array with 0
+        printf("[%d]Cleaning array\n", n_game);
+        clean_array(board, row, column);
+        printf("[%d]Sending update board\n", n_game);
+        semaphore_set(semaphore_id, 1);
+        cmd_broadcast(clients, CMD_UPDATE, NULL);
+        player = cmd_turn(clients, turn_num); //giocatore che sta facendo la mossa
+    }
     while (active) {
-
-        if(alive_timer + 5 <= time(NULL)){
-            printf("checking clients\n");
-            if(!is_alive(clients[0].pid)) {
-                cmd_send(clients[1],CMD_WINNER,&symbols[1]);
-                break;
-            }else if(!is_alive(clients[1].pid)) {
-                cmd_send(clients[0],CMD_WINNER,&symbols[0]);
-                break;
-            } else{
-                alive_timer = time(NULL);
-            }
-        }
         //Read incoming msg queue non blocking
         if (msgrcv(msg_qq_input, &client_mv_buffer, sizeof(client_mv_buffer) - sizeof(long), 1,
                    MSG_NOERROR | IPC_NOWAIT) > 0) {
@@ -260,9 +241,9 @@ int main(int argc, char *argv[]) {
                 cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
                 continue;
             }
-            //Wait to modify the array
+            //Wait for the clients to both read the board
             if(!semaphore_check(semaphore_id)){
-                printf("[%d] Waiting for semaphore to unlock\n",n_game);
+                printf("[%d] Waiting for client to read the board\n",n_game);
                 continue;
             }
             //Play the move
@@ -274,7 +255,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }else if (result == -2){
                 //Matrix piena
-                char tie_char = '0';
+                char tie_char = '\0';
                 cmd_broadcast(clients,CMD_WINNER,&tie_char);
             } else if (result == player.pid) {
                 //Winner
