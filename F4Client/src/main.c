@@ -29,7 +29,7 @@ void signal_close(int signal) {
 
 //funzione per il primo segnale d'uscita ctrl+c
 void signal_alert(int sig) {
-    printf("Sei sicuro di uscire se si ripremi ctrl + c\n");
+    printf("Are you sure you want to exit, if yes press CTRL + C\n");
     signal(SIGINT, signal_close); // Primo ctrl +c
 }
 
@@ -39,6 +39,28 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, signal_alert);
     signal(SIGUSR1, signal_close);
 
+    if(argc <= 1){
+        printf("Usage : %s <name> (*)\n",argv[0]);
+        return 1;
+    }
+    if(strlen(argv[1]) >= 50){
+        printf("The nickname max length is 50!\n");
+        return 1;
+    }
+
+    struct client_info clientInfo;
+    clientInfo.pid = getpid();
+
+    memcpy(clientInfo.name,argv[1], strlen(argv[1]));
+    clientInfo.name[strlen(argv[1])] = '\0';
+    //Set check if mode is single player
+    clientInfo.mode = '\0';
+    if (argc > 2) {
+        if (argv[2][0] == '*') {
+            clientInfo.mode = argv[2][0];
+        }
+    }
+
     //Open default path for fifo
     int fd = open(DEFAULT_PATH, O_WRONLY);
     if (access(DEFAULT_PATH, W_OK) != 0) {
@@ -46,24 +68,12 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    struct client_info clientInfo;
-    //Set pid
-    clientInfo.pid = getpid();
-    //Set check if mode is single player
-    clientInfo.mode = '\0';
-    if (argc > 1) {
-        if (argv[1][0] == '*') {
-            clientInfo.mode = argv[1][0];
-            //modalita' single player
-        }
-    }
     //Write to FIFO and connect to client
     write(fd, &clientInfo, sizeof(struct client_info));
 
     //Wait for the FIFO file to be created at /tmp/f4/<pid>
     char path[1024];
     sprintf(path, "%s%d", DEFAULT_CLIENTS_DIR, clientInfo.pid);
-
     printf("Waiting for another client to connect to the server\n");
     while (access(path, F_OK) != 0){
         if(!active) {
@@ -80,10 +90,8 @@ int main(int argc, char *argv[]) {
 
     //Open the input_fifo
     int input_fd = open(path, O_RDONLY);
+
     //Wait for symbol
-
-
-
     int code;
     //Read its own symbol
     struct symbol_info symbol;
@@ -92,6 +100,7 @@ int main(int argc, char *argv[]) {
     printf("position %d\n",symbol.pos);
     printf("own %d,char %c\n", code, symbol.own);
     printf("enemy %d,char %c\n", code, symbol.enemy);
+    printf("enemy_name %s\n", symbol.enemy_name);
 
 
     //Read gm_info (row,column,key_t shared_mem)
@@ -99,6 +108,8 @@ int main(int argc, char *argv[]) {
     code = cmd_read_code(input_fd);
     read(input_fd, &gm_info, sizeof(gm_info));
     printf("game number %d\n", gm_info.id);
+
+
 
 
 
@@ -120,6 +131,7 @@ int main(int argc, char *argv[]) {
 
     unsigned int row = gm_info.row;
     unsigned int column = gm_info.column;
+    int max_column[row];
 
     while (active) {
         //Read the start of the fifo
@@ -183,11 +195,17 @@ int main(int argc, char *argv[]) {
             struct client_msg msg;
             msg.mtype = 1;
             msg.pid = getpid();
-            //-1 because the board start at 1
-            msg.move = abs(atoi(input_char) - 1);
+            //Check that the string is not empty
+            if(input_char[0] == '\n')
+                continue;
+            msg.move = abs(strtol(input_char,NULL,10));
+            perror("error ");
             msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
         }
     }
+    //Detaching shared memory
+    shmdt(board);
+
     if(quit){
         struct client_msg msg;
         msg.mtype = 1;
@@ -203,8 +221,6 @@ int main(int argc, char *argv[]) {
             execv(argv[0],argv);
         }
     }
-    //Deataching shared memory
-    shmdt(board);
     printf("Closing!\n");
     return 0;
 }

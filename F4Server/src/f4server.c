@@ -8,6 +8,7 @@
 #include <sys/shm.h>
 #include <sys/wait.h>
 #include <sys/sem.h>
+#include <errno.h>
 
 #include "ioutils.h"
 #include "errExit.h"
@@ -37,12 +38,14 @@ int main(int argc, char *argv[]) {
     signal(SIGTSTP, signal_alert); //Set CTRL+Z
 
     //Check min argument
-    if (argc < 5) {
+    if (argc < 6) {
         printf("Usage: %s <n_row> <n_column> sym_1 sym_2\n", argv[0]);
         return 0;
     }
+
+
     //Check -f
-    if (argc == 6 && !strcmp(argv[5], "-f")) {
+    if (argc == 7 && !strcmp(argv[6], "-f")) {
         clean_everything();
     }
 
@@ -101,11 +104,11 @@ int main(int argc, char *argv[]) {
         if (n > 0) {
             printf("[Main]Client connecting with :\n");
             printf("[Main]pid :%d\n", buffer.pid);
-            printf("[Main]key id : %d\n", buffer.fifo_fd);
+            printf("[Main]name : %s\n", buffer.name);
             printf("[Main]mode : %c\n", buffer.mode);
 
             if (buffer.mode == '*') {
-                //TODO Single mode
+
             } else {
                 clients[queue_size] = buffer;
                 queue_size++;
@@ -114,19 +117,17 @@ int main(int argc, char *argv[]) {
 
                     //Check if client are alive before starting the game
                     if (!is_alive(clients[0].pid)) {
-                        printf("[Main]The process %d is not alive\n", clients[0].pid);
+                        printf("[Main]The client %d is not alive removing from queue\n", clients[0].pid);
                         clients[0] = clients[1];
                         queue_size = 1;
                         continue;
                     }
                     if (!is_alive(clients[1].pid)) {
-                        printf("[Main]The process %d is not alive\n", clients[1].pid);
+                        printf("[Main]The client %d is not alive removing from queue\n", clients[1].pid);
                         queue_size = 1;
                         continue;
                     }
 
-
-                    //TODO Max games
                     if (fork() == 0) {
                         break;
                     }
@@ -139,24 +140,21 @@ int main(int argc, char *argv[]) {
         if (active == 0) {
             printf("[Main]Stopping server\n");
             //Close main FIFO
-            close(fd_fifo_first_input);
-            unlink(DEFAULT_PATH);
-
             //Wait for every child to terminate
             pid_t child;
             int status;
             while ((child = waitpid(0, &status, 0)) != -1) {
                 printf("[Main]Child %d has been terminated\n", child);
             }
-
-            //Remove f4 folder
-            rmdir(DEFAULT_CLIENTS_DIR);
+            //Remove every fifo or folder
+            clean_everything();
             //Close fifo
             return 0;
         }
     }
-
     //Child ---------------------------------------------------------
+
+    close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
 
     //Create a fifo for each client in the folder f4
@@ -169,6 +167,7 @@ int main(int argc, char *argv[]) {
         info.pos = i;
         info.own = symbols[i];
         info.enemy = symbols[!i];
+        memcpy(info.enemy_name,clients[!i].name, CMD_DEFAULT_STRING_SIZE * sizeof(char));
         cmd_send(clients[i],CMD_SET_SYMBOLS,&info);
     }
 
@@ -184,7 +183,7 @@ int main(int argc, char *argv[]) {
     printf("[%d]Create shared mem\n", n_game);
     //Create shared memory
     int shm_id =
-            shmget(ftok(FTOK_SEM, n_game), row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
+            shmget(ftok(FTOK_SMH, n_game), row * column * sizeof(pid_t), IPC_CREAT | S_IRUSR | S_IWUSR | S_IROTH);
     if (shm_id == -1) {
         perror("shared memory creation error");
         active = 0;

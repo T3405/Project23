@@ -18,7 +18,7 @@
  */
 
 #define CMD_MSG_SIZE(X) (sizeof(X)*100)
-
+#define CMD_DEFAULT_STRING_SIZE 50
 #define CMD_SET_SYMBOLS (CMD_MSG_SIZE(struct symbol_info) + 1)
 #define CMD_SET_INFO (CMD_MSG_SIZE(struct game_info) + 2)
 #define CMD_UPDATE (3)
@@ -26,19 +26,21 @@
 
 #define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+5)
 #define CMD_WINNER (CMD_MSG_SIZE(char)+6)
-#define CMD_SERVER_OFFLINE (7)
+
 
 
 struct client_info {
     pid_t pid;
     char mode;
     int fifo_fd;
+    char name[CMD_DEFAULT_STRING_SIZE];
 };
 
 struct symbol_info {
     int pos;
     char own;
     char enemy;
+    char enemy_name[CMD_DEFAULT_STRING_SIZE];
 };
 
 struct client_msg {
@@ -51,6 +53,7 @@ struct game_info {
     size_t column;
     size_t row;
     int id;
+
 };
 
 
