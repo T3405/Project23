@@ -31,7 +31,7 @@ void clean_array(pid_t* matrix, int n_row, int n_column);
 
 
 /************************************
-*Matricola VR473680
-*Nome e cognome Alex Zanetti
+*Matricola VR473680,VR443698
+*Nome e cognome Alex Zanetti,Federico Rossato
 *Data di realizzazione 28 / 4 / 2023
 *************************************/

@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     //Set the both fd with a O_NON_BLOCK
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
-    fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK);
+    fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK );
 
 
     unsigned int row = gm_info.row;

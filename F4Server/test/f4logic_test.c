@@ -62,7 +62,7 @@ int main() {
 }
 
 /************************************
-*Matricola VR473680
-*Nome e cognome Alex Zanetti
+*Matricola VR473680,VR443698
+*Nome e cognome Alex Zanetti,Federico Rossato
 *Data di realizzazione 30 / 5 / 2023
 *************************************/

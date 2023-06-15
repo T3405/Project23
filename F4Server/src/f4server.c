@@ -276,6 +276,7 @@ int main(int argc, char *argv[]) {
         kill(clients[1].pid,SIGUSR1);
     }
 
+    sleep(1);
 
     //Removing shared memory
     shmdt(board);
@@ -300,7 +301,7 @@ int main(int argc, char *argv[]) {
 
 
 /************************************
-*Matricola VR473680
-*Nome e cognome Alex Zanetti
+*Matricola VR473680,VR443698
+*Nome e cognome Alex Zanetti,Federico Rossato
 *Data di realizzazione 28 / 4 / 2023
 *************************************/

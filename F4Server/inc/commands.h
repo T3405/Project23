@@ -98,7 +98,7 @@ int cmd_rmfifo(int pid, char *path, int fd);
 int path_size(int id, char *path);
 
 /************************************
-*Matricola VR473680
-*Nome e cognome Alex Zanetti
+*Matricola VR473680,VR443698
+*Nome e cognome Alex Zanetti,Federico Rossato
 *Data di realizzazione 28 / 4 / 2023
 *************************************/
