@@ -14,7 +14,6 @@
 
 #include "f4logic.h"
 #include "commands.h"
-#include "client_cmd.h"
 #include "ioutils.h"
 
 char active = 1;
@@ -40,11 +39,11 @@ int main(int argc, char *argv[]) {
     signal(SIGUSR1, signal_close);
 
     if(argc <= 1){
-        printf("Usage : %s <name> (*)\n",argv[0]);
+        printf("Usage : %s <nickname> (*)\n",argv[0]);
         return 1;
     }
     if(strlen(argv[1]) >= 50){
-        printf("The nickname max length is 50!\n");
+        printf("The nickname max length is 49!\n");
         return 1;
     }
 
@@ -85,9 +84,6 @@ int main(int argc, char *argv[]) {
     errno = 0;
 
 
-
-
-
     //Open the input_fifo
     int input_fd = open(path, O_RDONLY);
 
@@ -112,7 +108,6 @@ int main(int argc, char *argv[]) {
 
 
 
-
     //Attach shared-memory
     int mem_id = shmget(ftok(FTOK_SMH,gm_info.id), gm_info.column * gm_info.row * sizeof(pid_t), 0666);
     pid_t *board = shmat(mem_id, NULL, O_RDONLY);
@@ -131,7 +126,7 @@ int main(int argc, char *argv[]) {
 
     unsigned int row = gm_info.row;
     unsigned int column = gm_info.column;
-    int max_column[row];
+
 
     while (active) {
         //Read the start of the fifo
@@ -155,6 +150,7 @@ int main(int argc, char *argv[]) {
                         printf("|%c", print_symbol);
                     }
                     printf("|\n");
+
                     semaphore_use(sem_id,symbol.pos);
                 }
                 break;
@@ -166,12 +162,18 @@ int main(int argc, char *argv[]) {
             case CMD_INPUT_ERROR: {
                 int error_code = 0;
                 while(read(input_fd, &error_code, sizeof(int)) <= 0);
-                if (error_code == 1) {
-                    //Wrong input input
-                    printf("Wrong input please try again\n");
-                } else if (error_code == 2) {
-                    printf("It's not your turn\n");
-                    //Print not your turn
+                switch (error_code) {
+                    case -2:{
+                        printf("Input out of range try again\n");
+                    }
+                        break;
+                    case -3:{
+                        printf("The column is full!\n");
+                    }
+                        break;
+                    case 0:{
+                        printf("It's not your turn");
+                    }
                 }
             }
                 break;
@@ -200,6 +202,7 @@ int main(int argc, char *argv[]) {
                 continue;
             msg.move = abs(strtol(input_char,NULL,10));
             perror("error ");
+
             msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
         }
     }
@@ -224,3 +227,9 @@ int main(int argc, char *argv[]) {
     printf("Closing!\n");
     return 0;
 }
+
+/************************************
+*Matricola VR473680,VR443698
+*Nome e cognome Alex Zanetti,Federico Rossato
+*Data di realizzazione 28 / 4 / 2023
+*************************************/

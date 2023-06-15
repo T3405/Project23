@@ -30,6 +30,8 @@ int f4_play(pid_t* matrix, int column, pid_t player, int n_column, int n_row);
 void clean_array(pid_t* matrix, int n_row, int n_column);
 
 
+
+
 /************************************
 *Matricola VR473680,VR443698
 *Nome e cognome Alex Zanetti,Federico Rossato

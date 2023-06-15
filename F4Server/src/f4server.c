@@ -14,6 +14,7 @@
 #include "errExit.h"
 #include "commands.h"
 #include "f4logic.h"
+#include "serverbot.h"
 
 
 static volatile int active = 1;
@@ -108,7 +109,20 @@ int main(int argc, char *argv[]) {
             printf("[Main]mode : %c\n", buffer.mode);
 
             if (buffer.mode == '*') {
-
+                int bot_id = fork();
+                if(bot_id == 0){
+                    f4_bot(n_game);
+                    return 0;
+                }
+                if(fork() == 0){
+                    clients[0] = buffer;
+                    struct client_info bot;
+                    bot.pid = bot_id;
+                    memcpy(bot.name, "Bot", 3);
+                    bot.name[4] = '\0';
+                    clients[1] = bot;
+                    break;
+                }
             } else {
                 clients[queue_size] = buffer;
                 queue_size++;
@@ -212,7 +226,7 @@ int main(int argc, char *argv[]) {
     //Main game loop
     if(active) {
         //Tell the client to read the shared memory
-        // legge da memoria condivisa CMD_UPDATE
+        //legge da memoria condivisa CMD_UPDATE
         //Fill the array with 0
         printf("[%d]Cleaning array\n", n_game);
         clean_array(board, row, column);
@@ -236,7 +250,7 @@ int main(int argc, char *argv[]) {
             }
             //Check if sender is the player
             if (client_mv_buffer.pid != player.pid) {
-                int error = 2;
+                int error = 0;
                 cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
                 continue;
             }
@@ -247,12 +261,11 @@ int main(int argc, char *argv[]) {
             }
             //Play the move
             pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid, column, row);
-            if (result == -1) {
+            if (result < -1) {
                 //Wrong input
-                int error = 1;
-                cmd_send(player, CMD_INPUT_ERROR, &error);
+                cmd_send(player, CMD_INPUT_ERROR, &result);
                 continue;
-            }else if (result == -2){
+            }else if (result == -1){
                 //Matrix piena
                 char tie_char = '\0';
                 cmd_broadcast(clients,CMD_WINNER,&tie_char);

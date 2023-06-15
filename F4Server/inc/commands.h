@@ -90,12 +90,22 @@ struct client_info cmd_turn(struct client_info clients[], int turn);
  */
 int is_alive(pid_t pid);
 
+/***
+ * Read fifo
+ * @param fd id of the fifo
+ * @param code > 0 = cmd_id or 0 if there is nothing on the fifo
+ * @return pointer to the data
+ */
+int cmd_read_code(int fd);
+
 
 int cmd_mkfifo(int pid, char *path, int mode);
 
 int cmd_rmfifo(int pid, char *path, int fd);
 
 int path_size(int id, char *path);
+
+
 
 /************************************
 *Matricola VR473680,VR443698

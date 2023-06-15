@@ -65,6 +65,13 @@ int cmd_rmfifo(int pid,char* path,int fd){
     unlink(buffer);
 }
 
+int cmd_read_code(int fd){
+    int n = 0;
+    read(fd,&n,sizeof(int));
+    return n;
+}
+
+
 /************************************
 *Matricola VR473680,VR443698
 *Nome e cognome Alex Zanetti,Federico Rossato

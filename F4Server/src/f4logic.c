@@ -69,7 +69,7 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
         }
     }
 
-    return -2;
+    return -1;
 }
 
 
@@ -86,8 +86,11 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
 int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
 
     //Controlla se la colonna esiste
+    if(column < 0){
+        return -2;
+    }
     if (column >= n_column) {
-        return -1;
+        return -2;
     }
 
     char is_max_col = 0;
@@ -100,7 +103,7 @@ int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
         }
     }
     if (!is_max_col) {
-        return -1;
+        return -3;
     }
 
     return check_winner(matrix, n_column, n_row);
