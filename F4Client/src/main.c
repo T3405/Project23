@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
             }
             case CMD_INPUT_ERROR: {
                 int error_code = 0;
-                while(read(input_fd, &error_code, sizeof(int)) <= 0);
+                while((read(input_fd, &error_code, sizeof(int)) <= 0)&&active);
                 switch (error_code) {
                     case -2:{
                         printf("Input out of range try again\n");
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
                 break;
             case CMD_WINNER: {
                 char winner = 0;
-                while(read(input_fd, &winner, sizeof(char)) <= 0);
+                while((read(input_fd, &winner, sizeof(char)) <= 0) && active);
                 if (winner == symbol.own) {
                     printf("You are the winner!\n");
                 } else if (winner == symbol.enemy) {
