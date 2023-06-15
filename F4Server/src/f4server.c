@@ -146,6 +146,10 @@ int main(int argc, char *argv[]) {
       // Wait for every child to terminate
       pid_t child;
       int status;
+
+      for (int i = 0; i < 2; i++) {
+        kill(clients[i].pid, SIGUSR1);
+      }
       while ((child = waitpid(0, &status, 0)) != -1) {
         printf("[Main]Child %d has been terminated\n", child);
       }
@@ -256,11 +260,16 @@ int main(int argc, char *argv[]) {
         continue;
       } else if (result == -1) {
         // Matrix piena
+
+        semaphore_set(semaphore_id, 1);
+        cmd_broadcast(clients, CMD_UPDATE, NULL);
         char tie_char = '\0';
         cmd_broadcast(clients, CMD_WINNER, &tie_char);
         break;
       } else if (result == player.pid) {
         // Winner
+        semaphore_set(semaphore_id, 1);
+        cmd_broadcast(clients, CMD_UPDATE, NULL);
         cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
         break;
       }
