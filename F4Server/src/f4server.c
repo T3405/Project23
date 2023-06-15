@@ -269,6 +269,7 @@ int main(int argc, char *argv[]) {
                 //Matrix piena
                 char tie_char = '\0';
                 cmd_broadcast(clients,CMD_WINNER,&tie_char);
+                break;
             } else if (result == player.pid) {
                 //Winner
                 cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
