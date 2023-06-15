@@ -3,7 +3,6 @@
 #include <dirent.h>
 #include <sys/sem.h>
 #include <sys/stat.h>
-#include <sys/shm.h>
 #include <stdio.h>
 
 union semun{
@@ -62,6 +61,8 @@ int semaphore_use(int sem_id,int sem_num){
     arg.val = 0;
     return semctl(sem_id,sem_num,SETVAL,arg);
 }
+
+
 /************************************
 *Matricola VR473680
 *Nome e cognome Alex Zanetti
