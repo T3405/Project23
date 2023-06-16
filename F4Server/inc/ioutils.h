@@ -13,13 +13,12 @@ int semaphore_create(key_t key);
 int semaphore_check(int sem_id, int val);
 
 /**
- * Check the value of the semaphore and if to much time has passed
+ * Check the if the semaphore has not been semop for delay
  * @param sem_id id of the semaphore
- * @param val value to check
- * @param time time in seconds
- * @return true if every sem is val else false or time has passed
+ * @param delay time in seconds
+ * @return false if the time has passed else true
  */
-int semaphore_check_time(int sem_id, int val, int time);
+int semaphore_check_time(int sem_id, int delay);
 
 
 /**

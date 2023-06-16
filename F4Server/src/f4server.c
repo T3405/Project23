@@ -262,11 +262,16 @@ int main(int argc, char *argv[]) {
                 cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
                 continue;
             }
+            //TODO remove
+            sleep(2);
             // Block modify to the board if there is a client that is still reading the board
             if (!semaphore_check(semaphore_id, 0)) {
-                //TODO check if client is alive by timing
-                printf("[%d] Waiting for client to read the board\n", n_game);
-                continue;
+                printf("[%d]Waiting for client to read the board\n", n_game);
+                if(!semaphore_check_time(semaphore_id,5)){
+                    continue;
+                }else{
+                    printf("[%d]Waiting time has reached max forcing\n",n_game);
+                }
             }
             // Play the move
             pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid,
@@ -293,6 +298,8 @@ int main(int argc, char *argv[]) {
             current_time = time(NULL);
             turn_num = !turn_num;
 
+
+
             semaphore_set(semaphore_id, 1);
             player = cmd_turn(clients, turn_num);
         }
@@ -305,8 +312,7 @@ int main(int argc, char *argv[]) {
         kill(clients[1].pid, SIGUSR1);
     }
 
-
-    semaphore_check_time(semaphore_id, 0, 2);
+    sleep(1);
 
     // Removing shared memory
     shmdt(board);

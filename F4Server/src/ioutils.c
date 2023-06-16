@@ -52,14 +52,12 @@ int semaphore_check(int sem_id, int val) {
     return args.array[0] == val && args.array[1] == val;
 }
 
-int semaphore_check_time(int sem_id, int val, int delay) {
+int semaphore_check_time(int sem_id, int delay) {
     struct semid_ds ds;
     union semun arg;
     arg.buf = &ds;
     semctl(sem_id,0,IPC_STAT,arg);
-    if
-    printf("semop %ld,semlast %ld\n",ds.sem_otime,ds.sem_ctime);
-    return 0;
+    return ds.sem_otime + delay <= time(NULL);
 }
 
 int semaphore_set(int sem_id, int val) {
