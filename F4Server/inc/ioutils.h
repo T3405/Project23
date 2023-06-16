@@ -38,6 +38,8 @@ int semaphore_set(int sem_id, int val);
 int semaphore_use(int sem_id, int sem_num);
 
 
+void remove_key_t_games(int n_games,int size);
+
 /************************************
 *Matricola VR473680,VR443698
 *Nome e cognome Alex Zanetti,Federico Rossato

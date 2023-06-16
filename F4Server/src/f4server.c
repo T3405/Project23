@@ -163,6 +163,7 @@ int main(int argc, char *argv[]) {
                 printf("[Main]Child %d has been terminated\n", child);
             }
             // Remove every fifo or folder
+            remove_key_t_games(n_game,row*column* sizeof(pid_t));
             clean_everything();
             // Close fifo
             return 0;
@@ -310,6 +311,7 @@ int main(int argc, char *argv[]) {
     }
 
     sleep(1);
+    printf("[%d]Closing the game\n",n_game);
 
     // Removing shared memory
     shmdt(board);
@@ -323,12 +325,12 @@ int main(int argc, char *argv[]) {
 
     // Close all pipes
     for (int i = 0; i < 2; ++i) {
-        printf("[%d] Removing file %s%d\n", n_game, DEFAULT_CLIENTS_DIR,
+        printf("[%d]Removing file %s%d\n", n_game, DEFAULT_CLIENTS_DIR,
                clients[i].pid);
         cmd_rmfifo(clients[i].pid, DEFAULT_CLIENTS_DIR, clients[i].fifo_fd);
     }
 
-    printf("[%d] Game ended\n", n_game);
+    printf("[%d]Game ended\n", n_game);
 }
 
 /************************************

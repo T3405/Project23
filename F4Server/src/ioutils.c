@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/sem.h>
+#include <sys/shm.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -27,6 +28,16 @@ void remove_directory(const char *const path) {
     rmdir(path);
 }
 
+void remove_key_t_games(int n_games,int size){
+    for (int i = 0; i < n_games; ++i) {
+        int sem_id = semget(ftok(FTOK_SEM,i),2,0666);
+        semctl(sem_id,0,IPC_RMID);
+        int msg_qq = msgget(ftok(FTOK_MSG,i),0666);
+        msgctl(msg_qq,IPC_RMID,NULL);
+        int shm_mem = shmget(ftok(FTOK_SMH,i),size,0666);
+        shmctl(shm_mem,IPC_RMID,NULL);
+    }
+}
 void clean_everything() {
     printf("Unlinking main fifo\n");
     unlink(DEFAULT_PATH);
