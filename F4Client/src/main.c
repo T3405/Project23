@@ -10,7 +10,6 @@
 #include <sys/signal.h>
 #include <unistd.h>
 
-#include "ui.h"
 
 #include "commands.h"
 #include "f4logic.h"

@@ -9,6 +9,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #include "commands.h"
 #include "errExit.h"
@@ -34,8 +35,14 @@ int main(int argc, char *argv[]) {
 
   // Check min argument
   if (argc < 6) {
-    printf("Usage: %s <n_row> <n_column> sym_1 sym_2\n", argv[0]);
-    return 0;
+    printf("Usage: %s <n_row> <n_column> sym_1 sym_2 time_out (-f)\n", argv[0]);
+      exit(0);
+  }
+
+  int time_out = atoi(argv[5]);
+  if(time_out < 4){
+      printf("Timeout can't be lower than 5\n");
+      exit(0);
   }
 
   // Check -f
@@ -49,11 +56,11 @@ int main(int argc, char *argv[]) {
   // Check if the size is valid
   if (row < 5) {
     printf("The input row must be >= 5\n");
-    return 0;
+      exit(0);
   }
   if (column < 5) {
-    printf("The input column must be <= 5\n");
-    return 0;
+    printf("The input column must be >= 5\n");
+      exit(0);
   }
 
   // Set player symbols
@@ -142,14 +149,14 @@ int main(int argc, char *argv[]) {
     // Sopra tutto giusto
     if (active == 0) {
       printf("[Main]Stopping server\n");
-      // Close main FIFO
-      // Wait for every child to terminate
       pid_t child;
       int status;
-
+      //Tell the queue clients that the server is shutting down
       for (int i = 0; i < 2; i++) {
         kill(clients[i].pid, SIGUSR1);
       }
+
+      //Wait for all the child to terminate their game
       while ((child = waitpid(0, &status, 0)) != -1) {
         printf("[Main]Child %d has been terminated\n", child);
       }
@@ -161,6 +168,7 @@ int main(int argc, char *argv[]) {
   }
   // Child ---------------------------------------------------------
 
+  //Don't need the first_input fifo
   close(fd_fifo_first_input);
   printf("[%d]Starting game\n", n_game);
 
@@ -226,7 +234,13 @@ int main(int argc, char *argv[]) {
     cmd_broadcast(clients, CMD_UPDATE, NULL);
     player = cmd_turn(clients, turn_num); // giocatore che sta facendo la mossa
   }
+  int current_time = time(NULL);
   while (active) {
+      //Check if the client has a time out
+      if(current_time + time_out <= time(NULL)){
+          cmd_broadcast(clients,CMD_WINNER,&symbols[!turn_num]);
+          break;
+      }
     // Read incoming msg queue non blocking
     if (msgrcv(msg_qq_input, &client_mv_buffer,
                sizeof(client_mv_buffer) - sizeof(long), 1,

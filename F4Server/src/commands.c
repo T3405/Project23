@@ -9,7 +9,6 @@
 
 //client 0 cmd : CMD_SET_SYMBOLS : char
 void cmd_send(struct client_info client, int cmd, void* msg){
-
     write(client.fifo_fd,&cmd,sizeof(cmd));
     long size = cmd / 100;
     //printf("pid : %d, code : %d , size : %ld , fd : %d\n",client.pid,cmd,size,client.fifo_fd);
