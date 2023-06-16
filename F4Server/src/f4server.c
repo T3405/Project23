@@ -25,13 +25,12 @@ void signal_close(int signal) { active = 0; }
 void signal_alert(int sig) {
   printf("Sei sicuro di uscire se si ripremi ctrl + c\n");
   signal(SIGINT, signal_close);  // Primo ctrl +c
-  signal(SIGTSTP, signal_close); // Set CTRL+Z
 }
 
 int main(int argc, char *argv[]) {
 
-  signal(SIGINT, signal_alert);  // Read CTRL+C and stop the program
-  signal(SIGTSTP, signal_alert); // Set CTRL+Z
+  signal(SIGINT, signal_alert);  // Read CTRL+C
+  signal(SIGTSTP, signal_close); // Set CTRL+Z
 
   // Check min argument
   if (argc < 6) {
@@ -234,6 +233,7 @@ int main(int argc, char *argv[]) {
     cmd_broadcast(clients, CMD_UPDATE, NULL);
     player = cmd_turn(clients, turn_num); // giocatore che sta facendo la mossa
   }
+
   int current_time = time(NULL);
   while (active) {
       //Check if the client has a time out
@@ -274,28 +274,30 @@ int main(int argc, char *argv[]) {
         continue;
       } else if (result == -1) {
         // Matrix piena
-
         semaphore_set(semaphore_id, 1);
         cmd_broadcast(clients, CMD_UPDATE, NULL);
         char tie_char = '\0';
         cmd_broadcast(clients, CMD_WINNER, &tie_char);
         break;
       } else if (result == player.pid) {
-        // Winner
+      
         semaphore_set(semaphore_id, 1);
         cmd_broadcast(clients, CMD_UPDATE, NULL);
         cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
         break;
       }
-      turn_num = !turn_num;
+      //Reset time after a valid move
+      current_time = time(NULL);
 
+
+      turn_num = !turn_num;
       // Send update command
       semaphore_set(semaphore_id, 1);
       cmd_broadcast(clients, CMD_UPDATE, NULL);
       player = cmd_turn(clients, turn_num);
     }
   }
-
+  semaphore_set(semaphore_id, 1);
   // If the server is not active then tell the clients the server is going
   // offline
   if (!active) {
@@ -303,6 +305,8 @@ int main(int argc, char *argv[]) {
     kill(clients[1].pid, SIGUSR1);
   }
 
+  //TODO wait for client semaphore
+  
   sleep(1);
 
   // Removing shared memory

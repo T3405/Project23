@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sys/sem.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 union semun {
   int val;
@@ -38,13 +39,29 @@ int semaphore_create(key_t key) {
 }
 
 int semaphore_check(int sem_id) {
+  #ifdef DEBUG
   unsigned short values[2];
   union semun args;
   args.array = values;
   if (semctl(sem_id, 0, GETALL, args)) {
   }
   printf("sem val : {%d,%d}\n", args.array[0], args.array[1]);
-  return args.array[0] == 0 && args.array[1] == 0;
+  #endif
+  struct sembuf sops[2];
+  for (size_t i = 0; i < 2; i++)
+  {
+    sops[i].sem_num = i;
+    sops[i].sem_op = 0;
+    sops[i].sem_flg = IPC_NOWAIT;
+  }
+  
+  if(semop(sem_id,sops,2) == -1){
+    if(errno == EAGAIN){
+      return 0;
+    }else{
+      return 1;
+    }
+  }
 }
 int semaphore_set(int sem_id, int val) {
   unsigned short values[] = {val, val};
@@ -59,6 +76,7 @@ int semaphore_use(int sem_id, int sem_num) {
   arg.val = 0;
   return semctl(sem_id, sem_num, SETVAL, arg);
 }
+
 
 /************************************
  *Matricola VR473680,VR443698
