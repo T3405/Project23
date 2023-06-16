@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
     // Close all pipes
     for (int i = 0; i < 2; ++i) {
         printf("[%d] Removing file %s%d\n", n_game, DEFAULT_CLIENTS_DIR,
-               clients[i].fifo_fd);
+               clients[i].pid);
         cmd_rmfifo(clients[i].pid, DEFAULT_CLIENTS_DIR, clients[i].fifo_fd);
     }
 
