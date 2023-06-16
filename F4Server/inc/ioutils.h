@@ -7,7 +7,7 @@ int semaphore_create(key_t key);
  * @param sem_id id of the semaphore
  * @return true if every sem is 0 else false
  */
-int semaphore_check(int sem_id);
+int semaphore_check(int sem_id,int val);
 
 /**
  * Set every semaphore to val

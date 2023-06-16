@@ -62,31 +62,32 @@ int main(int argc, char *argv[]) {
       exit(0);
   }
 
-  // Set player symbols
-  char symbols[2];
-  if (*argv[3] == *argv[4]) {
-    printf("Can't use same symbols\n");
-    return 0;
-  }
-  symbols[0] = *argv[3];
-  symbols[1] = *argv[4];
+    // Set player symbols
+    char symbols[2];
+    if (*argv[3] == *argv[4]) {
+        printf("Can't use same symbols\n");
+        return 0;
+    }
+    symbols[0] = *argv[3];
+    symbols[1] = *argv[4];
 
-  // Creation default dir
-  if (mkdir(DEFAULT_CLIENTS_DIR, 0777) == -1) {
-    printf("Can't create dir at %s\n", DEFAULT_CLIENTS_DIR);
-    errExit("error");
-  }
+    // Create fifo for connecting
+    if (mkfifo(DEFAULT_PATH, S_IRUSR | S_IWUSR) != 0) {
+        printf("There is already an instance of f4server running\n");
+        printf("If you want to force start please use -f as last argument\n");
+        exit(0);
+    }
+    int fd_fifo_first_input = open(DEFAULT_PATH, O_RDONLY | O_NONBLOCK);
 
-  // Create fifo for connecting
-  if (mkfifo(DEFAULT_PATH, S_IRUSR | S_IWUSR) != 0) {
-    printf("There is already an instance of f4server running\n");
-    printf("If you want to force start please use -f as last argument\n");
-    exit(0);
-  }
-  int fd_fifo_first_input = open(DEFAULT_PATH, O_RDONLY | O_NONBLOCK);
+    // Creation default dir
+    if (mkdir(DEFAULT_CLIENTS_DIR, 0777) == -1) {
+        printf("Can't create dir at %s\n", DEFAULT_CLIENTS_DIR);
+        errExit("error");
+    }
 
-  // pid_t games[1024];
-  int n_game = 0;
+
+    // pid_t games[1024];
+    int n_game = 0;
   struct client_info clients[2];
   int queue_size = 0;
   printf("[Main]Waiting for clients\n");
@@ -95,7 +96,8 @@ int main(int argc, char *argv[]) {
     struct client_info buffer;
     ssize_t n = read(fd_fifo_first_input, &buffer, sizeof(struct client_info));
     if (n > 0) {
-      printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n",buffer.pid,buffer.name,buffer.mode);
+        printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n", buffer.pid, buffer.mode,
+               buffer.name);
 
 
       if (buffer.mode == '*') {
@@ -236,7 +238,7 @@ int main(int argc, char *argv[]) {
 
   int current_time = time(NULL);
   while (active) {
-      //Check if the client has a time out
+      //Check if the client has a timeout
       if(current_time + time_out <= time(NULL)){
           cmd_broadcast(clients,CMD_WINNER,&symbols[!turn_num]);
           break;
@@ -250,28 +252,28 @@ int main(int argc, char *argv[]) {
         if (client_mv_buffer.pid == player.pid) {
           cmd_broadcast(clients, CMD_WINNER, &symbols[!turn_num]);
         } else {
-          cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
+            cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
         }
-        break;
+          break;
       }
-      // Check if sender is the player
-      if (client_mv_buffer.pid != player.pid) {
-        int error = 0;
-        cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
-        continue;
-      }
-      // Block a modify to the board if there is a client that is still reading the board
-      if (!semaphore_check(semaphore_id)) {
-        printf("[%d] Waiting for client to read the board\n", n_game);
-        continue;
-      }
-      // Play the move
-      pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid,
-                             column, row);
-      if (result < -1) {
-        // Wrong input
-        cmd_send(player, CMD_INPUT_ERROR, &result);
-        continue;
+        // Check if sender is the player
+        if (client_mv_buffer.pid != player.pid) {
+            int error = 0;
+            cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
+            continue;
+        }
+        // Block modify to the board if there is a client that is still reading the board
+        if (!semaphore_check(semaphore_id, 0)) {
+            printf("[%d] Waiting for client to read the board\n", n_game);
+            continue;
+        }
+        // Play the move
+        pid_t result = f4_play(board, client_mv_buffer.move, client_mv_buffer.pid,
+                               column, row);
+        if (result < -1) {
+            // Wrong input
+            cmd_send(player, CMD_INPUT_ERROR, &result);
+            continue;
       } else if (result == -1) {
         // Matrix piena
         semaphore_set(semaphore_id, 1);

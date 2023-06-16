@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/sem.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 
@@ -38,30 +39,14 @@ int semaphore_create(key_t key) {
   return sem_id;
 }
 
-int semaphore_check(int sem_id) {
-  #ifdef DEBUG
+int semaphore_check(int sem_id,int val) {
   unsigned short values[2];
   union semun args;
   args.array = values;
   if (semctl(sem_id, 0, GETALL, args)) {
   }
   printf("sem val : {%d,%d}\n", args.array[0], args.array[1]);
-  #endif
-  struct sembuf sops[2];
-  for (size_t i = 0; i < 2; i++)
-  {
-    sops[i].sem_num = i;
-    sops[i].sem_op = 0;
-    sops[i].sem_flg = IPC_NOWAIT;
-  }
-  
-  if(semop(sem_id,sops,2) == -1){
-    if(errno == EAGAIN){
-      return 0;
-    }else{
-      return 1;
-    }
-  }
+  return args.array[0] == val && args.array[1] == val;
 }
 int semaphore_set(int sem_id, int val) {
   unsigned short values[] = {val, val};
@@ -72,9 +57,18 @@ int semaphore_set(int sem_id, int val) {
 }
 
 int semaphore_use(int sem_id, int sem_num) {
-  union semun arg;
-  arg.val = 0;
-  return semctl(sem_id, sem_num, SETVAL, arg);
+    struct sembuf sops;
+    sops.sem_num = sem_num;
+    sops.sem_op = -1;
+    sops.sem_flg = O_NONBLOCK;
+    //Check if sem is 1
+    if (semop(sem_id, &sops, 1) == -1) {
+        if(errno == EAGAIN){
+            return 0;
+        }
+        perror("error");
+    }
+    return 1;
 }
 
 

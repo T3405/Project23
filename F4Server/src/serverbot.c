@@ -20,8 +20,6 @@ void signal_stop(int signal) {
 void f4_bot(int n_game){
     signal(SIGUSR1, signal_stop);
 
-
-
     printf("[%d]Bot starting pid(%d)\n",n_game,getpid());
     //Waiting for server to open fifo
     char path[1024];
@@ -61,29 +59,26 @@ void f4_bot(int n_game){
 
     fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK );
 
-
-
     unsigned int row = gm_info.row;
     unsigned int column = gm_info.column;
     char is_max[column];
 
     while (active) {
         //Read the start of the fifo
+
+
+        if(semaphore_use(sem_id,symbol.pos)){
+            for (int i = 0; i < column; ++i) {
+                if(GET_M(board,row,i,row) == 0) {
+                    is_max[i] = 0;
+                }else{
+                    is_max[i] = 1;
+                }
+            }
+        }
         code = cmd_read_code(input_fd);
         switch (code) {
-            case 0:
-                break;
-            case CMD_UPDATE: {
-                //Print matrix to screen
-                for (int i = 0; i < column; ++i) {
-                    if(GET_M(board,row,i,row) == 0) {
-                        is_max[i] = 0;
-                    }else{
-                        is_max[i] = 1;
-                    }
-                }
-                semaphore_use(sem_id,symbol.pos);
-            }
+            default:
                 break;
             case CMD_TURN: {
                 srand(time(NULL));
