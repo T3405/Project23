@@ -262,8 +262,6 @@ int main(int argc, char *argv[]) {
                 cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
                 continue;
             }
-            //TODO remove
-            sleep(2);
             // Block modify to the board if there is a client that is still reading the board
             if (!semaphore_check(semaphore_id, 0)) {
                 printf("[%d]Waiting for client to read the board\n", n_game);
