@@ -78,7 +78,6 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
  * Controlla se e una giocata valida ritorna -1
  * if winner ritorna il pid del winner
  * else ritorna ZERO
- *
  */
 
 //size_x = length of x

@@ -11,7 +11,9 @@
 void cmd_send(struct client_info client, int cmd, void* msg){
     write(client.fifo_fd,&cmd,sizeof(cmd));
     long size = cmd / 100;
-    //printf("pid : %d, code : %d , size : %ld , fd : %d\n",client.pid,cmd,size,client.fifo_fd);
+    #ifdef DEBUG
+    printf("pid : %d, code : %d , size : %ld , fd : %d\n",client.pid,cmd,size,client.fifo_fd);
+    #endif
     if(cmd != 0){
         write(client.fifo_fd,msg, size);
     }

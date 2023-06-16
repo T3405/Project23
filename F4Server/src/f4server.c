@@ -95,18 +95,18 @@ int main(int argc, char *argv[]) {
     struct client_info buffer;
     ssize_t n = read(fd_fifo_first_input, &buffer, sizeof(struct client_info));
     if (n > 0) {
-      printf("[Main]Client connecting with :\n");
-      printf("[Main]pid :%d\n", buffer.pid);
-      printf("[Main]name : %s\n", buffer.name);
-      printf("[Main]mode : %c\n", buffer.mode);
+      printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n",buffer.pid,buffer.name,buffer.mode);
+
 
       if (buffer.mode == '*') {
         int bot_id = fork();
         if (bot_id == 0) {
+          //Bot child
           f4_bot(n_game);
-          return 0;
+          exit(0);
         }
         if (fork() == 0) {
+          //Bot creation
           clients[0] = buffer;
           struct client_info bot;
           bot.pid = bot_id;
@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
         cmd_send(clients[!turn_num], CMD_INPUT_ERROR, &error);
         continue;
       }
-      // Wait for the clients to both read the board
+      // Block a modify to the board if there is a client that is still reading the board
       if (!semaphore_check(semaphore_id)) {
         printf("[%d] Waiting for client to read the board\n", n_game);
         continue;
@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
   }
 
   //TODO wait for client semaphore
-  
+
   sleep(1);
 
   // Removing shared memory

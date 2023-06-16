@@ -1,5 +1,4 @@
 #include <fcntl.h>
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,16 +88,16 @@ int main(int argc, char *argv[]) {
   struct symbol_info symbol;
   code = cmd_read_code(input_fd);
   read(input_fd, &symbol, sizeof(symbol));
-  printf("position %d\n", symbol.pos);
-  printf("own %d,char %c\n", code, symbol.own);
-  printf("enemy %d,char %c\n", code, symbol.enemy);
-  printf("enemy_name %s\n", symbol.enemy_name);
+  printf("Position : %d\n", symbol.pos);
+  printf("Symbol :  %d,char %c\n", code, symbol.own);
+  printf("Enemy Symbol :  %d,char %c\n", code, symbol.enemy);
+  printf("Enemy Name %s\n", symbol.enemy_name);
 
   // Read gm_info (row,column,key_t shared_mem)
   struct game_info gm_info;
   code = cmd_read_code(input_fd);
   read(input_fd, &gm_info, sizeof(gm_info));
-  printf("game number %d\n", gm_info.id);
+  printf("Game number %d\n", gm_info.id);
 
   // Attach shared-memory
   int mem_id = shmget(ftok(FTOK_SMH, gm_info.id),
@@ -117,6 +116,17 @@ int main(int argc, char *argv[]) {
 
   unsigned int row = gm_info.row;
   unsigned int column = gm_info.column;
+
+  if(fork() = 0){
+    struct sembuf sops[1];
+    //TODO Reset signals
+    sops.
+    while (active)
+    {
+      if(sops[1].)
+    }
+    
+  }
 
   while (active) {
     // Read the start of the fifo
@@ -187,6 +197,7 @@ int main(int argc, char *argv[]) {
       struct client_msg msg;
       msg.mtype = 1;
       msg.pid = getpid();
+      //TODO fix problem if wrong input
       // Check that the string is not empty
       if (input_char[0] == '\n')
         continue;
