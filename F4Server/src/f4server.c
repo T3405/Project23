@@ -223,7 +223,6 @@ int main(int argc, char *argv[]) {
     int turn_num = 0; // turno primo client
     struct client_info player;
     struct client_msg client_mv_buffer;
-    // TODO add timer
     // Main game loop
     if (active) {
         // Tell the client to read the shared memory
@@ -237,7 +236,7 @@ int main(int argc, char *argv[]) {
         player = cmd_turn(clients, turn_num); // giocatore che sta facendo la mossa
     }
 
-    int current_time = time(NULL);
+    long current_time = time(NULL);
     while (active) {
         //Check if the client has a timeout
         if (current_time + time_out <= time(NULL)) {
@@ -306,11 +305,8 @@ int main(int argc, char *argv[]) {
         kill(clients[1].pid, SIGUSR1);
     }
 
-    //TODO wait for client semaphore for 2 sec
 
     semaphore_check_time(semaphore_id, 0, 2);
-
-    sleep(1);
 
     // Removing shared memory
     shmdt(board);
