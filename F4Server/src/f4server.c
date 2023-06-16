@@ -29,7 +29,7 @@ void signal_alert(int sig) {
 
 int main(int argc, char *argv[]) {
 
-    signal(SIGHUP,signal_close);
+    signal(SIGHUP, signal_close);
     signal(SIGINT, signal_alert);  // Read CTRL+C
     signal(SIGTSTP, signal_close); // Set CTRL+Z
 
@@ -308,7 +308,7 @@ int main(int argc, char *argv[]) {
 
     //TODO wait for client semaphore for 2 sec
 
-    semaphore_check_time(semaphore_id,0,2);
+    semaphore_check_time(semaphore_id, 0, 2);
 
     sleep(1);
 

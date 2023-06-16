@@ -8,52 +8,59 @@
 #include <errno.h>
 
 union semun {
-  int val;
-  struct semid_ds *buf;
-  unsigned short *array;
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
 };
 
 void remove_directory(const char *const path) {
-  DIR *directory = opendir(path);
-  if (directory == NULL) {
-    return;
-  }
-  struct dirent *entry;
+    DIR *directory = opendir(path);
+    if (directory == NULL) {
+        return;
+    }
+    struct dirent *entry;
 
-  while ((entry = readdir(directory))) {
-    unlinkat(dirfd(directory), entry->d_name, 0);
-  }
-  rmdir(path);
+    while ((entry = readdir(directory))) {
+        unlinkat(dirfd(directory), entry->d_name, 0);
+    }
+    rmdir(path);
 }
 
 void clean_everything() {
-  printf("Unlinking main fifo\n");
-  unlink(DEFAULT_PATH);
-  printf("Removing default directory\n");
-  remove_directory(DEFAULT_CLIENTS_DIR);
+    printf("Unlinking main fifo\n");
+    unlink(DEFAULT_PATH);
+    printf("Removing default directory\n");
+    remove_directory(DEFAULT_CLIENTS_DIR);
 }
 
 int semaphore_create(key_t key) {
-  int sem_id = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
-  semaphore_set(sem_id, 0);
-  return sem_id;
+    int sem_id = semget(key, 2, IPC_CREAT | S_IRUSR | S_IWUSR);
+    semaphore_set(sem_id, 0);
+    return sem_id;
 }
 
-int semaphore_check(int sem_id,int val) {
-  unsigned short values[2];
-  union semun args;
-  args.array = values;
-  if (semctl(sem_id, 0, GETALL, args)) {
-  }
-  printf("sem val : {%d,%d}\n", args.array[0], args.array[1]);
-  return args.array[0] == val && args.array[1] == val;
+int semaphore_check(int sem_id, int val) {
+    unsigned short values[2];
+    union semun args;
+    args.array = values;
+    if (semctl(sem_id, 0, GETALL, args)) {
+    }
+#ifdef DEBUG
+    printf("sem val : {%d,%d}\n", args.array[0], args.array[1]);
+#endif
+    return args.array[0] == val && args.array[1] == val;
 }
+
+int semaphore_check_time(int sem_id, int val, int time) {
+
+}
+
 int semaphore_set(int sem_id, int val) {
-  unsigned short values[] = {val, val};
-  union semun arg;
-  arg.array = values;
-  // Set sem to 0
-  return semctl(sem_id, 0, SETALL, arg);
+    unsigned short values[] = {val, val};
+    union semun arg;
+    arg.array = values;
+    // Set sem to 0
+    return semctl(sem_id, 0, SETALL, arg);
 }
 
 int semaphore_use(int sem_id, int sem_num) {
@@ -63,7 +70,7 @@ int semaphore_use(int sem_id, int sem_num) {
     sops.sem_flg = O_NONBLOCK;
     //Check if sem is 1
     if (semop(sem_id, &sops, 1) == -1) {
-        if(errno == EAGAIN){
+        if (errno == EAGAIN) {
             return 0;
         }
         perror("error");

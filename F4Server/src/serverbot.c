@@ -17,15 +17,15 @@ void signal_stop(int signal) {
     active = 0;
 }
 
-void f4_bot(int n_game){
+void f4_bot(int n_game) {
     signal(SIGUSR1, signal_stop);
 
-    printf("[%d]Bot starting pid(%d)\n",n_game,getpid());
+    printf("[%d]Bot starting pid(%d)\n", n_game, getpid());
     //Waiting for server to open fifo
     char path[1024];
     sprintf(path, "%s%d", DEFAULT_CLIENTS_DIR, getpid());
-    while (access(path, F_OK) != 0){
-        if(!active) {
+    while (access(path, F_OK) != 0) {
+        if (!active) {
             exit(0);
         }
     }
@@ -47,17 +47,17 @@ void f4_bot(int n_game){
 
 
     //Attach shared-memory
-    int mem_id = shmget(ftok(FTOK_SMH,gm_info.id), gm_info.column * gm_info.row * sizeof(pid_t), 0666);
+    int mem_id = shmget(ftok(FTOK_SMH, gm_info.id), gm_info.column * gm_info.row * sizeof(pid_t), 0666);
     pid_t *board = shmat(mem_id, NULL, O_RDONLY);
 
     //Open semaphore
-    int sem_id = semget(ftok(FTOK_SEM,gm_info.id), 2, S_IRUSR | S_IWUSR);
+    int sem_id = semget(ftok(FTOK_SEM, gm_info.id), 2, S_IRUSR | S_IWUSR);
 
     //Open msg_qq
-    int output_qq = msgget(ftok(FTOK_MSG,gm_info.id), 0666);
+    int output_qq = msgget(ftok(FTOK_MSG, gm_info.id), 0666);
 
 
-    fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK );
+    fcntl(input_fd, F_SETFL, fcntl(input_fd, F_GETFL) | O_NONBLOCK);
 
     unsigned int row = gm_info.row;
     unsigned int column = gm_info.column;
@@ -67,11 +67,11 @@ void f4_bot(int n_game){
         //Read the start of the fifo
 
 
-        if(semaphore_use(sem_id,symbol.pos)){
+        if (semaphore_use(sem_id, symbol.pos)) {
             for (int i = 0; i < column; ++i) {
-                if(GET_M(board,row,i,row) == 0) {
+                if (GET_M(board, row, i, row) == 0) {
                     is_max[i] = 0;
-                }else{
+                } else {
                     is_max[i] = 1;
                 }
             }
@@ -83,9 +83,9 @@ void f4_bot(int n_game){
             case CMD_TURN: {
                 srand(time(NULL));
                 int random;
-                while (active){
+                while (active) {
                     random = rand() % column;
-                    if(!is_max[random]){
+                    if (!is_max[random]) {
                         break;
                     }
                 }
@@ -93,12 +93,12 @@ void f4_bot(int n_game){
                 msg.pid = getpid();
                 msg.mtype = 1;
                 msg.move = random;
-                msgsnd(output_qq,&msg, sizeof(msg) - sizeof(long),0);
+                msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
                 break;
             }
             case CMD_INPUT_ERROR: {
                 int error_code = 0;
-                while(read(input_fd, &error_code, sizeof(int)) <= 0);
+                while (read(input_fd, &error_code, sizeof(int)) <= 0);
             }
                 break;
             case CMD_WINNER: {
@@ -109,7 +109,7 @@ void f4_bot(int n_game){
     }
     //Detaching shared memory
     shmdt(board);
-    printf("[%d]Bot closing!\n",gm_info.id);
+    printf("[%d]Bot closing!\n", gm_info.id);
 }
 
 /************************************

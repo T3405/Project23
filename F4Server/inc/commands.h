@@ -27,7 +27,6 @@
 #define CMD_WINNER (CMD_MSG_SIZE(char)+5)
 
 
-
 struct client_info {
     pid_t pid;
     char mode;

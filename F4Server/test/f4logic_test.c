@@ -8,8 +8,8 @@ int count = 0;
 
 void print_matrix(const int *matrix) {
     printf("\nprint array number %d\n", count++);
-    for (int i = 0; i < n_row; ++i){
-        for (int j = 0; j < n_column; ++j){
+    for (int i = 0; i < n_row; ++i) {
+        for (int j = 0; j < n_column; ++j) {
             printf("%d ", GET_M(matrix, n_row, i, j));
         }
         printf("\n");
@@ -39,7 +39,7 @@ int main() {
     print_matrix(matrix);
 
     int play;
-    for (int i = 0; i < 4; ++i){
+    for (int i = 0; i < 4; ++i) {
         play = f4_play(matrix, 4, 9, n_column, n_row);
     }
     printf("play vertical %d\n", play);
