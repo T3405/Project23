@@ -302,7 +302,6 @@ int main(int argc, char *argv[]) {
             player = cmd_turn(clients, turn_num);
         }
     }
-    semaphore_set(semaphore_id, 1);
     // If the server is not active then tell the clients the server is going
     // offline
     if (!active) {
