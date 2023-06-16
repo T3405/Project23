@@ -7,7 +7,6 @@
 #include <sys/stat.h>
 
 
-//client 0 cmd : CMD_SET_SYMBOLS : char
 void cmd_send(struct client_info client, int cmd, void* msg){
     write(client.fifo_fd,&cmd,sizeof(cmd));
     long size = cmd / 100;
@@ -34,6 +33,7 @@ struct client_info cmd_turn(struct client_info clients[],int turn){
 
 
 int is_alive(pid_t pid){
+    //Check if process is alivre
     if(kill(pid,0) == -1){
         if(errno == ESRCH){
             errno = 0;

@@ -21,11 +21,10 @@
 #define CMD_DEFAULT_STRING_SIZE 50
 #define CMD_SET_SYMBOLS (CMD_MSG_SIZE(struct symbol_info) + 1)
 #define CMD_SET_INFO (CMD_MSG_SIZE(struct game_info) + 2)
-#define CMD_UPDATE (3)
-#define CMD_TURN (4)
+#define CMD_TURN (3)
 
-#define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+5)
-#define CMD_WINNER (CMD_MSG_SIZE(char)+6)
+#define CMD_INPUT_ERROR (CMD_MSG_SIZE(int)+4)
+#define CMD_WINNER (CMD_MSG_SIZE(char)+5)
 
 
 
