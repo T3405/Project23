@@ -251,9 +251,9 @@ int main(int argc, char *argv[]) {
             // Check if a player has abandon the game
             if (client_mv_buffer.move == -1) {
                 if (client_mv_buffer.pid == player.pid) {
-                    cmd_broadcast(clients, CMD_WINNER, &symbols[!turn_num]);
+                    cmd_send(clients[!turn_num], CMD_WINNER, &symbols[!turn_num]);
                 } else {
-                    cmd_broadcast(clients, CMD_WINNER, &symbols[turn_num]);
+                    cmd_send(clients[turn_num], CMD_WINNER, &symbols[turn_num]);
                 }
                 break;
             }
