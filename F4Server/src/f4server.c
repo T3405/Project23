@@ -29,9 +29,9 @@ void signal_alert(int sig) {
 
 int main(int argc, char *argv[]) {
 
+    signal(SIGINT, signal_alert);
     signal(SIGHUP, signal_close);
-    signal(SIGINT, signal_alert);  // Read CTRL+C
-    signal(SIGTSTP, signal_close); // Set CTRL+Z
+    signal(SIGTSTP, signal_close);
 
     // Check min argument
     if (argc < 6) {
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 
     // pid_t games[1024];
-    int n_game = 0;
+    int n_game = 1;
     struct client_info clients[2];
     int queue_size = 0;
     printf("[Main]Waiting for clients\n");

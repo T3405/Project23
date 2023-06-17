@@ -25,6 +25,15 @@ void print_board(const pid_t *board, int sem_id, struct game_info gm_info, struc
     }
 }
 
+int check_string_num(const char *string, ssize_t str_length) {
+    for (int i = 0; i < str_length-1; ++i){
+        if(string[i] < '0' || string[i] > '9'){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /************************************
  *Matricola VR473680,VR443698
  *Nome e cognome Alex Zanetti,Federico Rossato

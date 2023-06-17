@@ -17,6 +17,14 @@ void signal_stop(int signal) {
     active = 0;
 }
 
+void send_random(int output_qq,int random_num){
+    struct client_msg msg;
+    msg.pid = getpid();
+    msg.mtype = 1;
+    msg.move = random_num;
+    msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
+}
+
 void f4_bot(int n_game) {
     signal(SIGUSR1, signal_stop);
 
@@ -65,8 +73,6 @@ void f4_bot(int n_game) {
 
     while (active) {
         //Read the start of the fifo
-
-
         if (semaphore_use(sem_id, symbol.pos)) {
             for (int i = 0; i < column; ++i) {
                 if (GET_M(board, row, i, row) == 0) {
@@ -82,23 +88,28 @@ void f4_bot(int n_game) {
                 break;
             case CMD_TURN: {
                 srand(time(NULL));
-                int random;
+                int random_num;
                 while (active) {
-                    random = rand() % column;
-                    if (!is_max[random]) {
+                    random_num = rand() % column;
+                    if (!is_max[random_num]) {
                         break;
                     }
                 }
-                struct client_msg msg;
-                msg.pid = getpid();
-                msg.mtype = 1;
-                msg.move = random;
-                msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
+                send_random(output_qq,random_num);
                 break;
             }
             case CMD_INPUT_ERROR: {
                 int error_code = 0;
                 while (read(input_fd, &error_code, sizeof(int)) <= 0);
+                srand(time(NULL));
+                int random_num;
+                while (active) {
+                    random_num = rand() % column;
+                    if (!is_max[random_num]) {
+                        break;
+                    }
+                }
+                send_random(output_qq,random_num);
             }
                 break;
             case CMD_WINNER: {

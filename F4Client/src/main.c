@@ -13,26 +13,30 @@
 #include "ui.h"
 #include "f4logic.h"
 #include "ioutils.h"
+#include "errExit.h"
 
 char active = 1;
 char quit = 0;
 
 // funzione per il secondo segnale d'uscita ctrl+c
 void signal_close(int signal) {
-  active = 0;
-  quit = 1;
+    active = 0;
+    quit = 1;
 }
 
 // funzione per il primo segnale d'uscita ctrl+c
 void signal_alert(int sig) {
-  printf("Are you sure you want to exit, if yes press CTRL + C\n");
-  signal(SIGINT, signal_close); // Primo ctrl +c
+    printf("Are you sure you want to exit, if yes press CTRL + C\n");
+    signal(SIGINT, signal_close); // Primo ctrl +c
 }
 
 int main(int argc, char *argv[]) {
 
     signal(SIGINT, signal_alert);
     signal(SIGUSR1, signal_close);
+    signal(SIGHUP, signal_close);
+    signal(SIGTSTP, signal_close);
+
 
     if (argc <= 1) {
         printf("Usage : %s <nickname> (*)\n", argv[0]);
@@ -102,13 +106,22 @@ int main(int argc, char *argv[]) {
     // Attach shared-memory
     int mem_id = shmget(ftok(FTOK_SMH, gm_info.id),
                         gm_info.column * gm_info.row * sizeof(pid_t), 0666);
+    if (mem_id == -1) {
+        errExit("error shared_memory");
+    }
     pid_t *board = shmat(mem_id, NULL, O_RDONLY);
 
     // Open semaphore
     int sem_id = semget(ftok(FTOK_SEM, gm_info.id), 2, S_IRUSR | S_IWUSR);
+    if (sem_id == -1) {
+        errExit("error semaphore");
+    }
 
     // Open msg_qq
     int output_qq = msgget(ftok(FTOK_MSG, gm_info.id), 0666);
+    if (output_qq == -1) {
+        errExit("error message queue");
+    }
 
     // Set the both fd with a O_NON_BLOCK
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
@@ -116,7 +129,7 @@ int main(int argc, char *argv[]) {
 
     while (active) {
         // Read the start of the fifo
-        print_board(board,sem_id,gm_info,symbolInfo);
+        print_board(board, sem_id, gm_info, symbolInfo);
         code = cmd_read_code(input_fd);
         switch (code) {
             default:
@@ -157,19 +170,21 @@ int main(int argc, char *argv[]) {
                 break;
             }
         }
-        char input_char[20];
+        char input_string[20];
         // Read STDIN and send to the msg_qq
-        if (read(STDIN_FILENO, input_char, 20) > 0) {
-            struct client_msg msg;
-            msg.mtype = 1;
-            msg.pid = getpid();
-            //TODO fix problem if wrong input
-            // Check that the string is not empty
-            if (input_char[0] == '\n')
-                continue;
-            msg.move = abs(strtol(input_char, NULL, 10));
-
-            msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
+        ssize_t input_read;
+        if ((input_read = read(STDIN_FILENO, input_string, 20)) > 0) {
+            if (input_string[0] != '\n') {
+                if(check_string_num(input_string, input_read)) {
+                    struct client_msg msg;
+                    msg.mtype = 1;
+                    msg.pid = getpid();
+                    msg.move = abs(atoi(input_string));
+                    msgsnd(output_qq, &msg, sizeof(msg) - sizeof(long), 0);
+                }else{
+                    printf("Input is not a number\n");
+                }
+            }
         }
     }
     shmdt(board);
