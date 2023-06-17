@@ -96,23 +96,19 @@ int semaphore_use(int sem_id, int sem_num) {
 }
 
 
-int get_safe_game(pid_t* games,int game_pid){
-    int n_game;
+int get_safe_game(pid_t* games){
     for (size_t i = 0; i < MAX_GAMES; i++)
     {
         if(games[i] == 0){
-            n_game = i+1;
-            break;
+            return i+1;
         }
         int status;
         pid_t result = waitpid(games[i], &status, WNOHANG);
         if(result != 0){
-            n_game = i+1
+            return i+1;
         }
     }
-
-    games[n_game-1] = game_pid;
-    return n_game;
+    return -1;
 }
 
 

@@ -39,7 +39,17 @@ int semaphore_set(int sem_id, int val);
 int semaphore_use(int sem_id, int sem_num);
 
 
+/**
+ * Remove every key till the n_games
+ */
 void remove_key_t_games(int n_games,int size);
+
+
+/**
+ * @param games array of games
+ * @param game_pid pid of new created game
+ */
+int get_safe_game(pid_t* games);
 
 /************************************
 *Matricola VR473680,VR443698

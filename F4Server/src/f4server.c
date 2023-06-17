@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
                     exit(0);
                 }
                 int x = fork();
+                n_game = get_safe_game(games);
                 if (x == 0) {
                     //Bot creation
                     clients[0] = buffer;
@@ -122,8 +123,11 @@ int main(int argc, char *argv[]) {
                     clients[1] = bot;
                     break;
                 }
-                games[n_game-1] = x;
-                n_game++;
+                if(n_game == -1){
+                    printf("[Main]Max game reached!!!\n");
+                }else{
+                    games[n_game-1] = x;
+                }
             } else {
                 clients[queue_size] = buffer;
                 queue_size++;
@@ -146,23 +150,15 @@ int main(int argc, char *argv[]) {
                     }
 
                     int x = fork();
+                    n_game = get_safe_game(games);
                     if (x == 0) {
                         break;
                     }
-                    for (size_t i = 1; i <= MAX_GAMES; i++)
-                    {
-                        if(games[i-1] == 0){
-                            n_game = i;
-                            break;
-                        }
-                    int status;
-                    pid_t result = waitpid(games[i-1], &status, WNOHANG);
-                    if(result != 0){
-                        
+                    if(n_game == -1){
+                        printf("[Main]Max game reached!!!\n");
+                    }else{
+                        games[n_game-1] = x;
                     }
-
-                    }
-                    games[n_game-1] = x;
                 }
             }
         }
@@ -184,7 +180,7 @@ int main(int argc, char *argv[]) {
                 printf("[Main]Child %d has been terminated\n", child);
             }
             // Remove every fifo or folder
-            remove_key_t_games(n_game,row*column* sizeof(pid_t));
+            remove_key_t_games(MAX_GAMES,row*column* sizeof(pid_t));
             clean_everything();
             printf("[Main]Stopping server\n");
             // Close fifo
@@ -193,6 +189,14 @@ int main(int argc, char *argv[]) {
     }
     // Child ---------------------------------------------------------
 
+    //Max Game reached
+    if(n_game == -1){
+        for (size_t i = 0; i < 2; i++)
+        {
+            kill(clients[0].pid,SIGUSR2);
+        }
+        exit(0);
+    }
     //signal(SIGINT, SIG_IGN);
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
@@ -213,6 +217,7 @@ int main(int argc, char *argv[]) {
                CMD_DEFAULT_STRING_SIZE * sizeof(char));
         cmd_send(clients[i], CMD_SET_SYMBOLS, &info);
     }
+
 
     // Creation msg qq
     int msg_qq_input = msgget(ftok(FTOK_MSG, n_game), 0666 | IPC_CREAT);
