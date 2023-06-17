@@ -11,7 +11,6 @@
 #define GET_M(V, X, Y, Z) (V[Z*X+Y])
 
 
-
 /**
  * Play the action and check if there is a winner
  * @param matrix matrix to play on
@@ -21,13 +20,13 @@
  * @param n_row n_column size of the matrix
  * @return -1 if there is a invalid plays,0 normal play,pid_t the pid of the winner
  */
-int f4_play(pid_t* matrix, int column, pid_t player, int n_column, int n_row);
+int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row);
 
 /**
  * Fill the array all with 0
  * @param matrix the matrix to fill
  */
-void clean_array(pid_t* matrix, int n_row, int n_column);
+void clean_array(pid_t *matrix, int n_row, int n_column);
 
 
 

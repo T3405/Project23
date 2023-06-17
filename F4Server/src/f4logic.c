@@ -5,16 +5,16 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
     pid_t cell;
 
     //Vertical
-    for (int j = 0; j < n_column; ++j){
-        for (int i = 0; i < n_row - 3; ++i){
+    for (int j = 0; j < n_column; ++j) {
+        for (int i = 0; i < n_row - 3; ++i) {
             cell = GET_M(matrix, n_row, i, j);
-            if(cell == 0){
+            if (cell == 0) {
                 continue;
             }
 
-            if(cell == GET_M(matrix, n_row, i + 1, j) &&
-               cell == GET_M(matrix, n_row, i + 2, j) &&
-               cell == GET_M(matrix, n_row, i + 3, j)){
+            if (cell == GET_M(matrix, n_row, i + 1, j) &&
+                cell == GET_M(matrix, n_row, i + 2, j) &&
+                cell == GET_M(matrix, n_row, i + 3, j)) {
                 return cell;
             }
 
@@ -22,17 +22,17 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
     }
 
     //Horizontal
-    for (int i = 0; i < n_row; ++i){
-        for (int j = 0; j < n_column - 3; ++j){
+    for (int i = 0; i < n_row; ++i) {
+        for (int j = 0; j < n_column - 3; ++j) {
             cell = GET_M(matrix, n_row, i, j);
 
-            if(cell == 0){
+            if (cell == 0) {
                 continue;
             }
 
-            if(cell == GET_M(matrix, n_row, i, j + 1) &&
-               cell == GET_M(matrix, n_row, i, j + 2) &&
-               cell == GET_M(matrix, n_row, i, j + 3)){
+            if (cell == GET_M(matrix, n_row, i, j + 1) &&
+                cell == GET_M(matrix, n_row, i, j + 2) &&
+                cell == GET_M(matrix, n_row, i, j + 3)) {
                 return cell;
             }
 
@@ -43,9 +43,9 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
     for (int i = 0; i < n_row - 3; i++) {
         for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
-            if (cell != 0 && cell == GET_M(matrix, n_row, i+1, j+1) &&
-                cell == GET_M(matrix, n_row, i+2, j+2) &&
-                cell == GET_M(matrix, n_row, i+3, j+3)) {
+            if (cell != 0 && cell == GET_M(matrix, n_row, i + 1, j + 1) &&
+                cell == GET_M(matrix, n_row, i + 2, j + 2) &&
+                cell == GET_M(matrix, n_row, i + 3, j + 3)) {
                 return cell;
             }
         }
@@ -55,16 +55,16 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
     for (int i = 3; i < n_row; i++) {
         for (int j = 0; j < n_column - 3; j++) {
             cell = GET_M(matrix, n_row, i, j);
-            if (cell != 0 && cell == GET_M(matrix, n_row, i-1, j+1) &&
-                cell == GET_M(matrix, n_row, i-2, j+2) &&
-                cell == GET_M(matrix, n_row, i-3, j+3)) {
+            if (cell != 0 && cell == GET_M(matrix, n_row, i - 1, j + 1) &&
+                cell == GET_M(matrix, n_row, i - 2, j + 2) &&
+                cell == GET_M(matrix, n_row, i - 3, j + 3)) {
                 return cell;
             }
         }
     }
 
-    for (int i = 0; i < n_column * n_row; ++i){
-        if(matrix[i] == 0){
+    for (int i = 0; i < n_column * n_row; ++i) {
+        if (matrix[i] == 0) {
             return 0;
         }
     }
@@ -78,7 +78,6 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
  * Controlla se e una giocata valida ritorna -1
  * if winner ritorna il pid del winner
  * else ritorna ZERO
- *
  */
 
 //size_x = length of x
@@ -86,7 +85,7 @@ int check_winner(const pid_t *matrix, int n_column, int n_row) {
 int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
 
     //Controlla se la colonna esiste
-    if(column < 0){
+    if (column < 0) {
         return -2;
     }
     if (column >= n_column) {
@@ -111,7 +110,7 @@ int f4_play(pid_t *matrix, int column, pid_t player, int n_column, int n_row) {
 
 
 void clean_array(pid_t *matrix, int n_row, int n_column) {
-    for (int i = 0; i < n_row * n_column; ++i){
+    for (int i = 0; i < n_row * n_column; ++i) {
         matrix[i] = 0;
     }
 }
