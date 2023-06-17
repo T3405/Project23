@@ -17,11 +17,12 @@
 #include "ioutils.h"
 #include "serverbot.h"
 
+
 static volatile int active = 1;
 
 void signal_close(int signal) {
      active = 0; 
-     }
+}
 
 // funzione per il primo segnale d'uscita ctrl+c
 void signal_alert(int sig) {
@@ -30,7 +31,7 @@ void signal_alert(int sig) {
 }
 
 int main(int argc, char *argv[]) {
-
+//TODO fix siginit
     signal(SIGINT, signal_alert);
     signal(SIGHUP, signal_close);
     signal(SIGTSTP, signal_close);
@@ -89,9 +90,11 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // pid_t games[1024];
+    
+    pid_t games[MAX_GAMES];
+    memset(games,0,sizeof(pid_t)*MAX_GAMES);
     int n_game = 1;
-    struct client_info clients[2] = {1,1};
+    struct client_info clients[2] = {0,0};
     int queue_size = 0;
     printf("[Main]Waiting for clients\n");
     while (1) {
@@ -101,8 +104,6 @@ int main(int argc, char *argv[]) {
         if (n > 0) {
             printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n", buffer.pid, buffer.mode,
                    buffer.name);
-
-
             if (buffer.mode == '*') {
                 int bot_id = fork();
                 if (bot_id == 0) {
@@ -110,7 +111,8 @@ int main(int argc, char *argv[]) {
                     f4_bot(n_game);
                     exit(0);
                 }
-                if (fork() == 0) {
+                int x = fork();
+                if (x == 0) {
                     //Bot creation
                     clients[0] = buffer;
                     struct client_info bot;
@@ -120,6 +122,7 @@ int main(int argc, char *argv[]) {
                     clients[1] = bot;
                     break;
                 }
+                games[n_game-1] = x;
                 n_game++;
             } else {
                 clients[queue_size] = buffer;
@@ -142,10 +145,24 @@ int main(int argc, char *argv[]) {
                         continue;
                     }
 
-                    if (fork() == 0) {
+                    int x = fork();
+                    if (x == 0) {
                         break;
                     }
-                    n_game++;
+                    for (size_t i = 1; i <= MAX_GAMES; i++)
+                    {
+                        if(games[i-1] == 0){
+                            n_game = i;
+                            break;
+                        }
+                    int status;
+                    pid_t result = waitpid(games[i-1], &status, WNOHANG);
+                    if(result != 0){
+                        
+                    }
+
+                    }
+                    games[n_game-1] = x;
                 }
             }
         }
@@ -175,7 +192,6 @@ int main(int argc, char *argv[]) {
         }
     }
     // Child ---------------------------------------------------------
-
 
     //signal(SIGINT, SIG_IGN);
     //Don't need the first_input fifo

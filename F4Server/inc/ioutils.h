@@ -1,4 +1,5 @@
 #include <sys/ipc.h>
+#define MAX_GAMES 254
 
 void clean_everything();
 

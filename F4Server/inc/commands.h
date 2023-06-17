@@ -6,7 +6,7 @@
 #define DEFAULT_PATH "/tmp/f4server"
 #define DEFAULT_CLIENTS_DIR "/tmp/f4/"
 #define FTOK_MSG DEFAULT_PATH
-#define FTOK_SMH "/tmp/"
+#define FTOK_SMH DEFAULT_CLIENTS_DIR
 #define FTOK_SEM DEFAULT_CLIENTS_DIR
 
 
