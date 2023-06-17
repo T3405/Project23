@@ -26,7 +26,10 @@ void send_random(int output_qq,int random_num){
 }
 
 void f4_bot(int n_game) {
-    signal(SIGUSR1, signal_stop);
+    signal(SIGINT, SIG_IGN);
+    signal(SIGUSR1,signal_stop);
+    signal(SIGHUP,signal_stop);
+    signal(SIGTSTP,signal_stop);
 
     printf("[%d]Bot starting pid(%d)\n", n_game, getpid());
     //Waiting for server to open fifo

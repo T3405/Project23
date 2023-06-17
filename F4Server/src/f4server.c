@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 
     // pid_t games[1024];
     int n_game = 1;
-    struct client_info clients[2];
+    struct client_info clients[2] = {1,1};
     int queue_size = 0;
     printf("[Main]Waiting for clients\n");
     while (1) {
@@ -156,17 +156,20 @@ int main(int argc, char *argv[]) {
             pid_t child;
             int status;
             //Tell the queue clients that the server is shutting down
+            /*
             for (int i = 0; i < 2; i++) {
                 kill(clients[i].pid, SIGUSR1);
-            }
+            }*/
+
 
             //Wait for all the child to terminate their game
-            while ((child = waitpid(0, &status, 0)) != -1) {
+            while ((child = waitpid(-1, &status, 0)) != -1) {
                 printf("[Main]Child %d has been terminated\n", child);
             }
             // Remove every fifo or folder
             remove_key_t_games(n_game,row*column* sizeof(pid_t));
             clean_everything();
+            printf("[Main]Stopping server\n");
             // Close fifo
             return 0;
         }
@@ -174,9 +177,7 @@ int main(int argc, char *argv[]) {
     // Child ---------------------------------------------------------
 
 
-    signal(SIGUSR1,signal_close);
-    signal(SIGHUP,signal_close);
-    signal(SIGTSTP,signal_close);
+    //signal(SIGINT, SIG_IGN);
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
@@ -317,7 +318,7 @@ int main(int argc, char *argv[]) {
     }
 
     sleep(1);
-    printf("[%d]Closing the game\n",n_game);
+    printf("[%d]Game ended\n", n_game);
 
     // Removing shared memory
     shmdt(board);
@@ -336,7 +337,8 @@ int main(int argc, char *argv[]) {
         cmd_rmfifo(clients[i].pid, DEFAULT_CLIENTS_DIR, clients[i].fifo_fd);
     }
 
-    printf("[%d]Game ended\n", n_game);
+    printf("[%d]Closing the game\n",n_game);
+
 }
 
 /************************************

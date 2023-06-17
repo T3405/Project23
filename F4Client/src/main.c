@@ -32,12 +32,6 @@ void signal_alert(int sig) {
 
 int main(int argc, char *argv[]) {
 
-    signal(SIGINT, signal_alert);
-    signal(SIGUSR1, signal_close);
-    signal(SIGHUP, signal_close);
-    signal(SIGTSTP, signal_close);
-
-
     if (argc <= 1) {
         printf("Usage : %s <nickname> (*)\n", argv[0]);
         return 1;
@@ -69,6 +63,10 @@ int main(int argc, char *argv[]) {
 
     // Write to FIFO and connect to client
     write(fd, &clientInfo, sizeof(struct client_info));
+    signal(SIGINT, signal_alert);
+    signal(SIGUSR1, signal_close);
+    signal(SIGHUP, signal_close);
+    signal(SIGTSTP, signal_close);
 
     // Wait for the FIFO file to be created at /tmp/f4/<pid>
     char path[1024];
