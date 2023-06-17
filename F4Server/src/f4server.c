@@ -19,7 +19,9 @@
 
 static volatile int active = 1;
 
-void signal_close(int signal) { active = 0; }
+void signal_close(int signal) {
+     active = 0; 
+     }
 
 // funzione per il primo segnale d'uscita ctrl+c
 void signal_alert(int sig) {
@@ -171,6 +173,10 @@ int main(int argc, char *argv[]) {
     }
     // Child ---------------------------------------------------------
 
+
+    signal(SIGUSR1,signal_close);
+    signal(SIGHUP,signal_close);
+    signal(SIGTSTP,signal_close);
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
