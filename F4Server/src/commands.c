@@ -32,7 +32,7 @@ struct client_info cmd_turn(struct client_info clients[], int turn) {
 
 
 int is_alive(pid_t pid) {
-    //Check if process is alivre
+    //Check if process is alive
     if (kill(pid, 0) == -1) {
         if (errno == ESRCH) {
             errno = 0;

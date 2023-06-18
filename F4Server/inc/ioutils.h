@@ -1,7 +1,9 @@
 #include <sys/ipc.h>
 #include <fcntl.h>
 #define MAX_GAMES 254
-
+/**
+ * Remove default folders
+ */
 void clear_folders();
 
 int semaphore_create(key_t key);
