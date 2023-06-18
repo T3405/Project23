@@ -1,7 +1,6 @@
 #include <sys/ipc.h>
 #include <fcntl.h>
-//TODO use 254
-#define MAX_GAMES 5
+#define MAX_GAMES 254
 
 void clean_everything();
 
