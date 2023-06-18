@@ -196,6 +196,9 @@ int main(int argc, char *argv[]) {
     }
     // Child ---------------------------------------------------------
 
+    //Remove previous semaphore
+    remove_key_t_game(max_game,row*column* sizeof(pid_t));
+
     //Max Game reached tell the clients
     if(n_game == -1){
         for (size_t i = 0; i < 2; i++)
