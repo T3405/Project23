@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <errno.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
@@ -24,14 +23,14 @@ void signal_close(int signal) {
      active = 0; 
 }
 
-// funzione per il primo segnale d'uscita ctrl+c
+//Ask confirmation before shutting down
 void signal_alert(int sig) {
     printf("Sei sicuro di uscire se si ripremi ctrl + c\n");
     signal(SIGINT, signal_close);  // Primo ctrl +c
 }
 
 int main(int argc, char *argv[]) {
-//TODO fix siginit
+    //Setup default signals
     signal(SIGINT, signal_alert);
     signal(SIGHUP, signal_close);
     signal(SIGTSTP, signal_close);
@@ -48,7 +47,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // Check -f
+    // Check force mode
     if (argc == 7 && !strcmp(argv[6], "-f")) {
         clear_folders();
     }
@@ -86,12 +85,14 @@ int main(int argc, char *argv[]) {
     // Creation default dir
     if (mkdir(DEFAULT_CLIENTS_DIR, 0777) == -1) {
         printf("Can't create dir at %s\n", DEFAULT_CLIENTS_DIR);
-        errExit("error");
+        errExit("creation error");
     }
 
 
+    //Create array of games that is all set to 0
     pid_t games[MAX_GAMES];
     memset(games,0,sizeof(pid_t)*MAX_GAMES);
+
     int max_game = 0;
     int n_game;
     struct client_info clients[2] = {0,0};
@@ -104,18 +105,20 @@ int main(int argc, char *argv[]) {
         if (n > 0) {
             printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n", buffer.pid, buffer.mode,
                    buffer.name);
+            //Check if client is playing against a bot
             if (buffer.mode == '*') {
                 n_game = get_safe_game(games);
                 remove_key_t_game(n_game,row*column* sizeof(pid_t));
                 int x = fork();
                 if (x == 0) {
+                    //Start the bot
                     int bot_id = fork();
                     if (bot_id == 0) {
                         //Bot child
                         f4_bot(n_game);
                         exit(0);
                     }
-                    //Bot creation
+                    //Set the client to have a bot against him
                     clients[0] = buffer;
                     struct client_info bot;
                     bot.pid = bot_id;
@@ -171,13 +174,14 @@ int main(int argc, char *argv[]) {
         // Sopra tutto giusto
         if (active == 0) {
             printf("[Main]Stopping server\n");
+
             pid_t child;
             int status;
             //Tell the queue clients that the server is shutting down
-            /*
             for (int i = 0; i < 2; i++) {
-                kill(clients[i].pid, SIGUSR1);
-            }*/
+                if(clients[i].pid != 0)
+                    kill(clients[i].pid, SIGUSR1);
+            }
 
 
             //Wait for all the child to terminate their game
@@ -188,13 +192,12 @@ int main(int argc, char *argv[]) {
             remove_key_t_games(max_game,row*column* sizeof(pid_t));
             clear_folders();
             printf("[Main]Stopping server\n");
-            // Close fifo
             return 0;
         }
     }
     // Child ---------------------------------------------------------
 
-    //Max Game reached
+    //Max Game reached tell the clients
     if(n_game == -1){
         for (size_t i = 0; i < 2; i++)
         {
@@ -203,7 +206,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    //signal(SIGINT, SIG_IGN);
+
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
@@ -213,6 +216,8 @@ int main(int argc, char *argv[]) {
         clients[i].fifo_fd =
                 cmd_mkfifo(clients[i].pid, DEFAULT_CLIENTS_DIR, O_WRONLY);
     }
+
+    //Send the client the information about themselves
     printf("[%d]Sending Symbols\n", n_game);
     for (int i = 0; i < 2; ++i) {
         struct symbol_info info;
@@ -241,6 +246,7 @@ int main(int argc, char *argv[]) {
         perror("shared memory creation error");
         active = 0;
     }
+
     printf("[%d]Attach shared mem (id : %d)\n", n_game, shm_id);
     pid_t *board = (pid_t *) shmat(shm_id, NULL, 0);
 
@@ -255,13 +261,13 @@ int main(int argc, char *argv[]) {
     // Broadcast info of shared memory to clients
     cmd_broadcast(clients, CMD_SET_INFO, &gm_info);
 
-    int turn_num = 0; // turno primo client
+
+    int turn_num = 0;
     struct client_info player;
     struct client_msg client_mv_buffer;
+    long current_time = time(NULL);
     // Main game loop
     if (active) {
-        // Tell the client to read the shared memory
-        // legge da memoria condivisa CMD_UPDATE
         // Fill the array with 0
         printf("[%d]Cleaning array\n", n_game);
         clean_array(board, row, column);
@@ -270,8 +276,6 @@ int main(int argc, char *argv[]) {
         semaphore_set(semaphore_id, 1);
         player = cmd_turn(clients, turn_num); // giocatore che sta facendo la mossa
     }
-
-    long current_time = time(NULL);
     while (active) {
         //Check if the client has a timeout
         if (current_time + time_out <= time(NULL)) {
@@ -314,7 +318,7 @@ int main(int argc, char *argv[]) {
                 cmd_send(player, CMD_INPUT_ERROR, &result);
                 continue;
             } else if (result == -1) {
-                // Matrix piena
+                //Matrix if full
                 //Tell the clients to read the board
                 semaphore_set(semaphore_id, 1);
                 char tie_char = '\0';
@@ -330,8 +334,6 @@ int main(int argc, char *argv[]) {
             //Reset time after a valid move
             current_time = time(NULL);
             turn_num = !turn_num;
-
-
 
             semaphore_set(semaphore_id, 1);
             player = cmd_turn(clients, turn_num);
@@ -357,7 +359,7 @@ int main(int argc, char *argv[]) {
     // Removing message queue
     msgctl(msg_qq_input, IPC_RMID, NULL);
 
-    // Close all pipes
+    // Close all pipes and remove them
     for (int i = 0; i < 2; ++i) {
         printf("[%d]Removing file %s%d\n", n_game, DEFAULT_CLIENTS_DIR,
                clients[i].pid);
