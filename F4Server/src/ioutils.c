@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 union semun {
     int val;
@@ -90,7 +91,7 @@ int semaphore_use(int sem_id, int sem_num) {
         if (errno == EAGAIN) {
             return 0;
         }
-        perror("error");
+        perror("semaphore error");
     }
     return 1;
 }
@@ -105,6 +106,7 @@ int get_safe_game(pid_t* games){
         int status;
         pid_t result = waitpid(games[i], &status, WNOHANG);
         if(result != 0){
+            printf("is empty\n");
             return i+1;
         }
     }

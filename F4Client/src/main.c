@@ -18,6 +18,11 @@
 char active = 1;
 char quit = 0;
 
+void signal_exit(int signal){
+    printf("Max game reached please try again later\n");
+    exit(0);
+}
+
 // funzione per il secondo segnale d'uscita ctrl+c
 void signal_close(int signal) {
     active = 0;
@@ -31,6 +36,8 @@ void signal_alert(int sig) {
 }
 
 int main(int argc, char *argv[]) {
+
+    signal(SIGUSR2, signal_exit);
 
     if (argc <= 1) {
         printf("Usage : %s <nickname> (*)\n", argv[0]);
@@ -185,6 +192,10 @@ int main(int argc, char *argv[]) {
         }
     }
     shmdt(board);
+
+    signal(SIGINT, SIG_DFL);
+    signal(SIGHUP, SIG_DFL);
+    signal(SIGTSTP, SIG_DFL);
 
     if (quit) {
         struct client_msg msg;

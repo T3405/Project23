@@ -1,5 +1,7 @@
 #include <sys/ipc.h>
-#define MAX_GAMES 254
+#include <fcntl.h>
+//TODO use 254
+#define MAX_GAMES 5
 
 void clean_everything();
 
@@ -46,6 +48,7 @@ void remove_key_t_games(int n_games,int size);
 
 
 /**
+ * Get a n_game that is not connected to any ongoing games
  * @param games array of games
  * @param game_pid pid of new created game
  */

@@ -105,15 +105,15 @@ int main(int argc, char *argv[]) {
             printf("[Main]Client connecting : pid : %d , mode : \'%c\' , name : %s\n", buffer.pid, buffer.mode,
                    buffer.name);
             if (buffer.mode == '*') {
-                int bot_id = fork();
-                if (bot_id == 0) {
-                    //Bot child
-                    f4_bot(n_game);
-                    exit(0);
-                }
-                int x = fork();
                 n_game = get_safe_game(games);
+                int x = fork();
                 if (x == 0) {
+                    int bot_id = fork();
+                    if (bot_id == 0) {
+                        //Bot child
+                        f4_bot(n_game);
+                        exit(0);
+                    }
                     //Bot creation
                     clients[0] = buffer;
                     struct client_info bot;
@@ -149,8 +149,8 @@ int main(int argc, char *argv[]) {
                         continue;
                     }
 
-                    int x = fork();
                     n_game = get_safe_game(games);
+                    int x = fork();
                     if (x == 0) {
                         break;
                     }
@@ -193,10 +193,11 @@ int main(int argc, char *argv[]) {
     if(n_game == -1){
         for (size_t i = 0; i < 2; i++)
         {
-            kill(clients[0].pid,SIGUSR2);
+            kill(clients[i].pid,SIGUSR2);
         }
         exit(0);
     }
+
     //signal(SIGINT, SIG_IGN);
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
