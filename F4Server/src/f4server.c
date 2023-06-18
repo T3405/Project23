@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    //signal(SIGINT, SIG_IGN);
+
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
