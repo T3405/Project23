@@ -106,7 +106,6 @@ int get_safe_game(pid_t* games){
         int status;
         pid_t result = waitpid(games[i], &status, WNOHANG);
         if(result != 0){
-            printf("is empty\n");
             return i+1;
         }
     }
