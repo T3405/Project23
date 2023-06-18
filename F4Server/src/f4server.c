@@ -31,7 +31,6 @@ void signal_alert(int sig) {
 }
 
 int main(int argc, char *argv[]) {
-//TODO fix siginit
     signal(SIGINT, signal_alert);
     signal(SIGHUP, signal_close);
     signal(SIGTSTP, signal_close);
@@ -203,7 +202,7 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    //signal(SIGINT, SIG_IGN);
+
     //Don't need the first_input fifo
     close(fd_fifo_first_input);
     printf("[%d]Starting game\n", n_game);
