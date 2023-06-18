@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     // Check -f
     if (argc == 7 && !strcmp(argv[6], "-f")) {
-        clean_everything();
+        clear_folders();
     }
 
     int row = atoi(argv[1]);
@@ -90,10 +90,10 @@ int main(int argc, char *argv[]) {
     }
 
 
-    
     pid_t games[MAX_GAMES];
     memset(games,0,sizeof(pid_t)*MAX_GAMES);
-    int n_game = 1;
+    int max_game = 0;
+    int n_game;
     struct client_info clients[2] = {0,0};
     int queue_size = 0;
     printf("[Main]Waiting for clients\n");
@@ -106,6 +106,7 @@ int main(int argc, char *argv[]) {
                    buffer.name);
             if (buffer.mode == '*') {
                 n_game = get_safe_game(games);
+                remove_key_t_game(n_game,row*column* sizeof(pid_t));
                 int x = fork();
                 if (x == 0) {
                     int bot_id = fork();
@@ -150,6 +151,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     n_game = get_safe_game(games);
+                    remove_key_t_game(n_game,row*column* sizeof(pid_t));
                     int x = fork();
                     if (x == 0) {
                         break;
@@ -161,6 +163,9 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
+        }
+        if(max_game < n_game){
+            max_game = n_game;
         }
 
         // Sopra tutto giusto
@@ -180,8 +185,8 @@ int main(int argc, char *argv[]) {
                 printf("[Main]Child %d has been terminated\n", child);
             }
             // Remove every fifo or folder
-            remove_key_t_games(MAX_GAMES,row*column* sizeof(pid_t));
-            clean_everything();
+            remove_key_t_games(max_game,row*column* sizeof(pid_t));
+            clear_folders();
             printf("[Main]Stopping server\n");
             // Close fifo
             return 0;

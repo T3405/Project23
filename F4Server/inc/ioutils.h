@@ -2,7 +2,7 @@
 #include <fcntl.h>
 #define MAX_GAMES 254
 
-void clean_everything();
+void clear_folders();
 
 int semaphore_create(key_t key);
 
@@ -43,7 +43,12 @@ int semaphore_use(int sem_id, int sem_num);
 /**
  * Remove every key till the n_games
  */
-void remove_key_t_games(int n_games,int size);
+void remove_key_t_games(int max_games,int size);
+
+/**
+ * Remove every IPC with n_game
+ */
+void remove_key_t_game(int n_game,int size);
 
 
 /**
