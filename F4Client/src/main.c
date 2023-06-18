@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
     struct symbol_info symbolInfo;
     code = cmd_read_code(input_fd);
     read(input_fd, &symbolInfo, sizeof(symbolInfo));
-    printf("Symbol :  %d,char %c\n", code, symbolInfo.own);
-    printf("Enemy Symbol :  %d,char %c\n", code, symbolInfo.enemy);
+    printf("Symbol : %c\n", symbolInfo.own);
+    printf("Enemy Symbol : %c\n", symbolInfo.enemy);
     printf("Enemy Name : %s\n", symbolInfo.enemy_name);
 
     // Read gm_info (row,column,key_t shared_mem)
