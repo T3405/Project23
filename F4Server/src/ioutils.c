@@ -1,5 +1,6 @@
 #include "ioutils.h"
 #include "commands.h"
+#include <unistd.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/sem.h>
@@ -8,6 +9,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 union semun {
     int val;
@@ -28,17 +30,21 @@ void remove_directory(const char *const path) {
     rmdir(path);
 }
 
-void remove_key_t_games(int n_games,int size){
-    for (int i = 0; i < n_games; ++i) {
-        int sem_id = semget(ftok(FTOK_SEM,i),2,0666);
-        semctl(sem_id,0,IPC_RMID);
-        int msg_qq = msgget(ftok(FTOK_MSG,i),0666);
-        msgctl(msg_qq,IPC_RMID,NULL);
-        int shm_mem = shmget(ftok(FTOK_SMH,i),size,0666);
-        shmctl(shm_mem,IPC_RMID,NULL);
+void remove_key_t_games(int max_games,int size){
+    for (int i = 0; i < max_games; ++i) {
+        remove_key_t_game(i,size);
     }
 }
-void clean_everything() {
+
+void remove_key_t_game(int n_game,int size){
+    int sem_id = semget(ftok(FTOK_SEM,n_game),2,0666);
+    semctl(sem_id,0,IPC_RMID);
+    int msg_qq = msgget(ftok(FTOK_MSG,n_game),0666);
+    msgctl(msg_qq,IPC_RMID,NULL);
+    int shm_mem = shmget(ftok(FTOK_SMH,n_game),size,0666);
+    shmctl(shm_mem,IPC_RMID,NULL);
+}
+void clear_folders() {
     printf("Unlinking main fifo\n");
     unlink(DEFAULT_PATH);
     printf("Removing default directory\n");
@@ -89,9 +95,25 @@ int semaphore_use(int sem_id, int sem_num) {
         if (errno == EAGAIN) {
             return 0;
         }
-        perror("error");
+        perror("semaphore error");
     }
     return 1;
+}
+
+
+int get_safe_game(pid_t* games){
+    for (size_t i = 0; i < MAX_GAMES; i++)
+    {
+        if(games[i] == 0){
+            return i+1;
+        }
+        int status;
+        pid_t result = waitpid(games[i], &status, WNOHANG);
+        if(result != 0){
+            return i+1;
+        }
+    }
+    return -1;
 }
 
 

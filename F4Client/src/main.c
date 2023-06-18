@@ -18,6 +18,11 @@
 char active = 1;
 char quit = 0;
 
+void signal_exit(int signal){
+    printf("Max game reached please try again later\n");
+    exit(0);
+}
+
 // funzione per il secondo segnale d'uscita ctrl+c
 void signal_close(int signal) {
     active = 0;
@@ -32,11 +37,7 @@ void signal_alert(int sig) {
 
 int main(int argc, char *argv[]) {
 
-    signal(SIGINT, signal_alert);
-    signal(SIGUSR1, signal_close);
-    signal(SIGHUP, signal_close);
-    signal(SIGTSTP, signal_close);
-
+    signal(SIGUSR2, signal_exit);
 
     if (argc <= 1) {
         printf("Usage : %s <nickname> (*)\n", argv[0]);
@@ -69,6 +70,10 @@ int main(int argc, char *argv[]) {
 
     // Write to FIFO and connect to client
     write(fd, &clientInfo, sizeof(struct client_info));
+    signal(SIGINT, signal_alert);
+    signal(SIGUSR1, signal_close);
+    signal(SIGHUP, signal_close);
+    signal(SIGTSTP, signal_close);
 
     // Wait for the FIFO file to be created at /tmp/f4/<pid>
     char path[1024];
@@ -92,10 +97,9 @@ int main(int argc, char *argv[]) {
     struct symbol_info symbolInfo;
     code = cmd_read_code(input_fd);
     read(input_fd, &symbolInfo, sizeof(symbolInfo));
-    printf("Position : %d\n", symbolInfo.pos);
     printf("Symbol :  %d,char %c\n", code, symbolInfo.own);
     printf("Enemy Symbol :  %d,char %c\n", code, symbolInfo.enemy);
-    printf("Enemy Name %s\n", symbolInfo.enemy_name);
+    printf("Enemy Name : %s\n", symbolInfo.enemy_name);
 
     // Read gm_info (row,column,key_t shared_mem)
     struct game_info gm_info;
@@ -188,6 +192,10 @@ int main(int argc, char *argv[]) {
         }
     }
     shmdt(board);
+
+    signal(SIGINT, SIG_DFL);
+    signal(SIGHUP, SIG_DFL);
+    signal(SIGTSTP, SIG_DFL);
 
     if (quit) {
         struct client_msg msg;
