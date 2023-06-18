@@ -1,5 +1,6 @@
 #include <sys/ipc.h>
 #include <fcntl.h>
+#include "errExit.h"
 #define MAX_GAMES 254
 /**
  * Remove default folders

@@ -1,5 +1,6 @@
 #include "ioutils.h"
 #include "commands.h"
+
 #include <unistd.h>
 #include <dirent.h>
 #include <stdio.h>
@@ -95,7 +96,9 @@ int semaphore_use(int sem_id, int sem_num) {
         if (errno == EAGAIN) {
             return 0;
         }
-        perror("semaphore error");
+        //TODO remove
+        errExit("semaphore error");
+        //perror("semaphore error");
     }
     return 1;
 }

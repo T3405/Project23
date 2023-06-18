@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <errno.h>
 
 #include "commands.h"
 #include "errExit.h"
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]) {
             //Check if client is playing against a bot
             if (buffer.mode == '*') {
                 n_game = get_safe_game(games);
-                remove_key_t_game(n_game,row*column* sizeof(pid_t));
+                //remove_key_t_game(n_game,row*column* sizeof(pid_t));
                 int x = fork();
                 if (x == 0) {
                     //Start the bot
@@ -154,7 +155,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     n_game = get_safe_game(games);
-                    remove_key_t_game(n_game,row*column* sizeof(pid_t));
+                    ///remove_key_t_game(n_game,row*column* sizeof(pid_t));
                     int x = fork();
                     if (x == 0) {
                         break;
@@ -250,8 +251,11 @@ int main(int argc, char *argv[]) {
     printf("[%d]Attach shared mem (id : %d)\n", n_game, shm_id);
     pid_t *board = (pid_t *) shmat(shm_id, NULL, 0);
 
+    errno = 0;
     printf("[%d]Create Semaphore\n", n_game);
     int semaphore_id = semaphore_create(ftok(FTOK_SEM, n_game));
+    perror("sem");
+    printf("semaphore id : %d\n",semaphore_id);
 
     struct game_info gm_info;
     gm_info.row = row;
