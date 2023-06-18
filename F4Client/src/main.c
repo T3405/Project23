@@ -23,13 +23,13 @@ void signal_exit(int signal){
     exit(0);
 }
 
-// funzione per il secondo segnale d'uscita ctrl+c
+//Close signal function
 void signal_close(int signal) {
     active = 0;
     quit = 1;
 }
 
-// funzione per il primo segnale d'uscita ctrl+c
+//Confirmation close signal function
 void signal_alert(int sig) {
     printf("Are you sure you want to exit, if yes press CTRL + C\n");
     signal(SIGINT, signal_close); // Primo ctrl +c
@@ -193,10 +193,12 @@ int main(int argc, char *argv[]) {
     }
     shmdt(board);
 
+    //Reset the signals
     signal(SIGINT, SIG_DFL);
     signal(SIGHUP, SIG_DFL);
     signal(SIGTSTP, SIG_DFL);
 
+    //Check if you quit using the signals
     if (quit) {
         struct client_msg msg;
         msg.mtype = 1;
