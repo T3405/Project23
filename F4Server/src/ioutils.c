@@ -96,9 +96,7 @@ int semaphore_use(int sem_id, int sem_num) {
         if (errno == EAGAIN) {
             return 0;
         }
-        //TODO remove
         errExit("semaphore error");
-        //perror("semaphore error");
     }
     return 1;
 }
